@@ -1,0 +1,313 @@
+# Kodi Media Center language file
+# Addon Name: Matrix Screensaver
+# Addon id: screensaver.matrix
+# Addon Provider: jamal2362
+msgid ""
+msgstr ""
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: de\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "#32000"
+msgid "Matrix Screensaver"
+msgstr "Matrix-Bildschirmschoner"
+
+msgctxt "#32001"
+msgid "Getting video list..."
+msgstr "Videoliste erhalten..."
+
+msgctxt "#32002"
+msgid "Offline mode"
+msgstr "Offline-Modus"
+
+msgctxt "#32003"
+msgid "Download folder"
+msgstr "Download-Ordner"
+
+msgctxt "#32004"
+msgid "Download Videos"
+msgstr "Videos herunterladen"
+
+msgctxt "#32005"
+msgid "No videos found"
+msgstr "Es wurden keine Videos gefunden"
+
+msgctxt "#32006"
+msgid "You need to define a download folder."
+msgstr "Es muss ein Download-Ordner festgelegt werden."
+
+msgctxt "#32007"
+msgid "Choose locations to download videos for:"
+msgstr "Wähle einen Ort aus, an dem die Videos heruntergeladen werden sollen:"
+
+msgctxt "#32008"
+msgid "of"
+msgstr "von"
+
+msgctxt "#32009"
+msgid "Time left:"
+msgstr "Verbleibende Zeit:"
+
+msgctxt "#32010"
+msgid "Instantiated. Please wait..."
+msgstr "Instanziiert. Bitte warten..."
+
+msgctxt "#32011"
+msgid "Show start notification"
+msgstr "Startbenachrichtigung anzeigen"
+
+msgctxt "#32012"
+msgid "Checking which videos to download..."
+msgstr "Prüfen, welche Videos heruntergeladen werden sollen..."
+
+msgctxt "#32013"
+msgid "Initializing..."
+msgstr "Initialisierung..."
+
+msgctxt "#32014"
+msgid "DPMS*"
+msgstr "DPMS*"
+
+msgctxt "#32015"
+msgid "DPMS"
+msgstr "DPMS"
+
+msgctxt "#32016"
+msgid "Toggle display off"
+msgstr "Display ausschalten"
+
+msgctxt "#32017"
+msgid "Put playing device on standby via a CEC"
+msgstr "Wiedergabegerät über CEC in den Standby-Modus versetzen"
+
+msgctxt "#32018"
+msgid "Videos"
+msgstr "Videos"
+
+msgctxt "#32019"
+msgid "General settings"
+msgstr "Allgemeine Einstellungen"
+
+msgctxt "#32020"
+msgid "* DPMS will check for the Power Saving Kodi settings and stop the screensaver"
+msgstr "* DPMS prüft die Kodi-Einstellungen zum Energiesparen und stoppt den Bildschirmschoner"
+
+msgctxt "#32021"
+msgid "if the maximum allowed time to put the display to sleep is exceeded"
+msgstr "wenn die maximal zulässige Zeit für den Ruhezustand des Displays überschritten wird"
+
+msgctxt "#32022"
+msgid "Off"
+msgstr "Aus"
+
+msgctxt "#32023"
+msgid "Kodi"
+msgstr "Kodi"
+
+msgctxt "#32024"
+msgid "Manual"
+msgstr "Manuell"
+
+msgctxt "#32025"
+msgid "Manual timeout to activate DPMS (min)"
+msgstr "Manuelle Zeitüberschreitung zur Aktivierung von DPMS (in Minuten)"
+
+msgctxt "#32026"
+msgid "DPMS action"
+msgstr "DPMS-Aktion"
+
+msgctxt "#32027"
+msgid "Pause Video"
+msgstr "Video pausieren"
+
+msgctxt "#32028"
+msgid "Stop Video"
+msgstr "Video stoppen"
+
+msgctxt "#32029"
+msgid "Show preview window"
+msgstr "Vorschaufenster anzeigen"
+
+msgctxt "#32030"
+msgid "Only use local files"
+msgstr "Nur lokale Dateien nutzen"
+
+msgctxt "#32031"
+msgid "No downloaded videos for offline mode!"
+msgstr "Keine heruntergeladenen Videos!"
+
+msgctxt "#32032"
+msgid "Only local videos that have been downloaded are played, without attempting to connect to the servers. You need to download the videos first!"
+msgstr "Es werden nur lokale Videos abgespielt, die heruntergeladen wurden, ohne dass versucht wird, eine Verbindung zu den Servern herzustellen. Es müssen zuerst Videos heruntergeladen werden!"
+
+msgctxt "#32033"
+msgid "Displays a notification when the screensaver starts"
+msgstr "Zeigt eine Benachrichtigung an, wenn der Bildschirmschoner startet"
+
+msgctxt "#32034"
+msgid "Shows a preview between the videos"
+msgstr "Zeigt eine Vorschau zwischen den Videos"
+
+msgctxt "#32035"
+msgid "Select a folder where the videos will be saved"
+msgstr "Wähle einen Ordner, in dem die Videos gespeichert werden sollen"
+
+msgctxt "#32036"
+msgid "Opens a dialog with a selection of videos that can be downloaded"
+msgstr "Öffnet einen Dialog mit einer Auswahl von Videos, die heruntergeladen werden können"
+
+msgctxt "#32037"
+msgid "Display Power Management Signaling (DPMS)"
+msgstr "Auch als Display-Energiesparmodus bekannt"
+
+msgctxt "#32038"
+msgid "has already been downloaded."
+msgstr "wurde bereits heruntergeladen."
+
+msgctxt "#32039"
+msgid "General"
+msgstr "Allgemein"
+
+msgctxt "#32040"
+msgid "Enable 3D"
+msgstr "3D aktivieren"
+
+msgctxt "#32041"
+msgid "Enable 3D (Alternative)"
+msgstr "3D (Alternative) aktivieren"
+
+msgctxt "#32042"
+msgid "Enable Black & white"
+msgstr "Schwarzweiß aktivieren"
+
+msgctxt "#32043"
+msgid "Enable Bugs"
+msgstr "Bugs aktivieren"
+
+msgctxt "#32044"
+msgid "Enable Classic"
+msgstr "Klassisch aktivieren"
+
+msgctxt "#32045"
+msgid "Enable Classic (with Intro)"
+msgstr "Klassisch (mit Intro) aktivieren"
+
+msgctxt "#32046"
+msgid "Enable Debug"
+msgstr "Debug aktivieren"
+
+msgctxt "#32047"
+msgid "Enable Megacity (Revolutions)"
+msgstr "Megastadt (Revolutions) aktivieren"
+
+msgctxt "#32048"
+msgid "Enable Morpheus"
+msgstr "Morpheus aktivieren"
+
+msgctxt "#32049"
+msgid "Enable Nightmare"
+msgstr "Albtraum aktivieren"
+
+msgctxt "#32050"
+msgid "Enable Operator"
+msgstr "Operator aktivieren"
+
+msgctxt "#32051"
+msgid "Enable Palimpsest"
+msgstr "Palimpsest aktivieren"
+
+msgctxt "#32052"
+msgid "Enable Paradise"
+msgstr "Paradies aktivieren"
+
+msgctxt "#32053"
+msgid "Enable Rainbow"
+msgstr "Regenbogen aktivieren"
+
+msgctxt "#32054"
+msgid "Enable Resurrections"
+msgstr "Wiederauferstehung (Resurrections) aktivieren"
+
+msgctxt "#32055"
+msgid "Enable Trinity"
+msgstr "Trinity aktivieren"
+
+msgctxt "#32056"
+msgid "Enable Twilight"
+msgstr "Dämmerung aktivieren"
+
+msgctxt "#32057"
+msgid "All"
+msgstr "Alle"
+
+msgctxt "#32058"
+msgid "3D"
+msgstr "3D"
+
+msgctxt "#32059"
+msgid "3D Alternative"
+msgstr "3D (Alternative)"
+
+msgctxt "#32060"
+msgid "Black & White"
+msgstr "Schwarzweiß"
+
+msgctxt "#32061"
+msgid "Bugs"
+msgstr "Bugs"
+
+msgctxt "#32062"
+msgid "Classic"
+msgstr "Klassisch"
+
+msgctxt "#32063"
+msgid "Classic (with Intro)"
+msgstr "Klassisch (Intro)"
+
+msgctxt "#32064"
+msgid "Debug"
+msgstr "Debug"
+
+msgctxt "#32065"
+msgid "Megacity"
+msgstr "Megastadt (Revolutions)"
+
+msgctxt "#32066"
+msgid "Morpheus"
+msgstr "Morpheus"
+
+msgctxt "#32067"
+msgid "Nightmare"
+msgstr "Albtraum"
+
+msgctxt "#32068"
+msgid "Operator"
+msgstr "Operator"
+
+msgctxt "#32069"
+msgid "Palimpsest"
+msgstr "Palimpsest"
+
+msgctxt "#32070"
+msgid "Paradise"
+msgstr "Paradies"
+
+msgctxt "#32071"
+msgid "Rainbow"
+msgstr "Regenbogen"
+
+msgctxt "#32072"
+msgid "Resurrections"
+msgstr "Wiederauferstehung (Resurrections)"
+
+msgctxt "#32073"
+msgid "Trinity"
+msgstr "Trinity"
+
+msgctxt "#32074"
+msgid "Twilight"
+msgstr "Dämmerung"
