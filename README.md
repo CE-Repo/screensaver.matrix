@@ -171,6 +171,25 @@ common questions:
 | First frame takes minutes | The video is being pulled in full instead of streamed — check the log line above |
 | A scene never appears | Its toggle is off, or its entry in `playlist.json` has no video URL |
 
+
+## Screenshots
+
+<p align="center">
+<img width="800" alt="screenshot-01" src="https://github.com/user-attachments/assets/2844c79f-9b08-4b3a-9f36-eac0bfc298a9" />
+</p>
+
+<p align="center">
+<img width="800" alt="screenshot-02" src="https://github.com/user-attachments/assets/8cd4679a-1d92-45c3-b3b4-f818bd6ebc47" />
+</p>
+
+<p align="center">
+<img width="800" alt="screenshot-03" src="https://github.com/user-attachments/assets/59a22ec1-f2ac-435f-8b55-0cdb9b961116" />
+</p>
+
+<p align="center">
+<img width="800" alt="screenshot-04" src="https://github.com/user-attachments/assets/1fdec033-f8f1-46e4-85ad-edadaa7eecbc" />
+</p>
+
 ## Credits
 
 Videos are hosted at
