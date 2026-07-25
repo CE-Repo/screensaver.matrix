@@ -65,21 +65,23 @@ class MatrixPlaylist:
                 # Get just the file's name, without the HTTP URL part
                 file_name = url.split("/")[-1]
 
-                # By default, we assume a local copy of the file doesn't exist
-                exists_on_disk = False
-                # Inspect the disk to see if the file exists in the download location
-                local_file_path = os.path.join(addon.getSetting("download-folder"), file_name)
-                if xbmcvfs.exists(local_file_path):
-                    # Mark that the file exists on disk
-                    exists_on_disk = True
-                    # Overwrite the network URL with the local path to the file
+                # The download folder is only consulted when the user asked for local
+                # playback. With that setting off we keep the network URL, so the video
+                # streams from the host instead of a copy downloaded earlier
+                if self.force_offline:
+                    local_file_path = os.path.join(addon.getSetting("download-folder"), file_name)
+                    if not xbmcvfs.exists(local_file_path):
+                        # Nothing to play for this location without a network connection
+                        xbmc.log("Local file missing for location {}, skipping".format(location),
+                                 level=xbmc.LOGDEBUG)
+                        continue
                     url = local_file_path
                     xbmc.log("Video available locally, path is: {}".format(local_file_path), level=xbmc.LOGDEBUG)
+                else:
+                    xbmc.log("Streaming video for location {} from {}".format(location, url),
+                             level=xbmc.LOGDEBUG)
 
-                # If the file exists locally or we're not in offline mode, add it to the playlist
-                if exists_on_disk or not self.force_offline:
-                    xbmc.log("Adding video for location {} to playlist".format(location), level=xbmc.LOGDEBUG)
-                    self.playlist.append(url)
+                self.playlist.append(url)
 
             # Now that we're done building the playlist, shuffle and return to the caller
             shuffle(self.playlist)

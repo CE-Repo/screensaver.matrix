@@ -1,5 +1,6 @@
 import json
 import threading
+import time
 
 import xbmc
 import xbmcgui
@@ -10,6 +11,48 @@ from .playlist import MatrixPlaylist
 from .trans import ScreensaverTrans
 
 monitor = xbmc.Monitor()
+
+LOG_PREFIX = "[Matrix Screensaver]"
+
+
+def is_network_source(path):
+    return bool(path) and path.startswith(("http://", "https://"))
+
+
+class MatrixPlayer(xbmc.Player):
+    """Player that reports where each video came from and how fast it started.
+
+    The delay between asking for playback and the first rendered frame tells
+    streaming and buffering apart: a streamed video starts within seconds, while
+    a player that first has to pull the whole file needs minutes for the same
+    video. These lines are logged at info level, so no debug logging is needed.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.source = None
+        self.requested_at = None
+
+    def play_video(self, path):
+        self.source = path
+        self.requested_at = time.time()
+        xbmc.log("{} Requesting {} source: {}".format(
+            LOG_PREFIX, "network" if is_network_source(path) else "local", path),
+            level=xbmc.LOGINFO)
+        self.play(path, windowed=True)
+
+    def onAVStarted(self):
+        if self.requested_at is None:
+            return
+        delay = time.time() - self.requested_at
+        self.requested_at = None
+        xbmc.log("{} First frame after {:.2f}s, {}".format(
+            LOG_PREFIX, delay,
+            "streamed over the network" if is_network_source(self.source) else "read from disk"),
+            level=xbmc.LOGINFO)
+
+    def onPlayBackError(self):
+        xbmc.log("{} Playback failed for {}".format(LOG_PREFIX, self.source), level=xbmc.LOGERROR)
 
 
 class Screensaver(xbmcgui.WindowXML):
@@ -30,8 +73,13 @@ class Screensaver(xbmcgui.WindowXML):
         self.setProperty("screensaver-matrix-loading", "true")
 
         if self.video_playlist:
+            streamed = len([url for url in self.video_playlist if is_network_source(url)])
+            xbmc.log("{} Playlist ready: {} videos, {} streamed, {} local".format(
+                LOG_PREFIX, len(self.video_playlist), streamed, len(self.video_playlist) - streamed),
+                level=xbmc.LOGINFO)
+
             self.setProperty("screensaver-matrix-loading", "false")
-            self.matrixplayer = xbmc.Player()
+            self.matrixplayer = MatrixPlayer()
 
             # Start player thread
             threading.Thread(target=self.start_playback).start()
@@ -123,7 +171,7 @@ class Screensaver(xbmcgui.WindowXML):
 
     def start_playback(self):
         self.playindex = 0
-        self.matrixplayer.play(self.video_playlist[self.playindex], windowed=True)
+        self.matrixplayer.play_video(self.video_playlist[self.playindex])
         while self.active and not monitor.abortRequested():
             monitor.waitForAbort(1)
             # If we finish playing the video
@@ -134,7 +182,7 @@ class Screensaver(xbmcgui.WindowXML):
                 else:
                     self.playindex = 0
                 # Using the updated iterator, start playing the next video
-                self.matrixplayer.play(self.video_playlist[self.playindex], windowed=True)
+                self.matrixplayer.play_video(self.video_playlist[self.playindex])
 
 
 def run(params=False):
