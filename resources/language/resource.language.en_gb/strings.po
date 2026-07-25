@@ -311,3 +311,11 @@ msgstr ""
 msgctxt "#32074"
 msgid "Twilight"
 msgstr ""
+
+msgctxt "#32075"
+msgid "All selected videos have already been downloaded."
+msgstr ""
+
+msgctxt "#32076"
+msgid "Download failed:"
+msgstr ""

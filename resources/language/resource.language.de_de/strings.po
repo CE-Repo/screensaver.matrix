@@ -249,7 +249,7 @@ msgid "3D"
 msgstr "3D"
 
 msgctxt "#32059"
-msgid "3D Alternative"
+msgid "3D (Alternative)"
 msgstr "3D (Alternative)"
 
 msgctxt "#32060"
@@ -273,7 +273,7 @@ msgid "Debug"
 msgstr "Debug"
 
 msgctxt "#32065"
-msgid "Megacity"
+msgid "Megacity (Revolutions)"
 msgstr "Megastadt (Revolutions)"
 
 msgctxt "#32066"
@@ -311,3 +311,11 @@ msgstr "Trinity"
 msgctxt "#32074"
 msgid "Twilight"
 msgstr "Dämmerung"
+
+msgctxt "#32075"
+msgid "All selected videos have already been downloaded."
+msgstr "Alle ausgewählten Videos wurden bereits heruntergeladen."
+
+msgctxt "#32076"
+msgid "Download failed:"
+msgstr "Download fehlgeschlagen:"

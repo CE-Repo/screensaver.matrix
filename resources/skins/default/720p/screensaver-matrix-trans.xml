@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!--
+    Deliberately empty. Shown while a video is already playing so Kodi has a
+    screensaver window on screen without restarting playback behind it.
+-->
 <window type="window">
     <controls>
-   </controls>
+    </controls>
 </window>

@@ -75,8 +75,11 @@
                 <setting id="manual-dpms" type="integer" label="32025" help="">
                     <level>0</level>
                     <default>5</default>
+                    <!-- The minimum has to sit on the step grid, otherwise the
+                         slider offers 1, 6, 11 ... 116 and neither the default
+                         of 5 nor the maximum of 120 can ever be selected. -->
                     <constraints>
-                        <minimum>1</minimum>
+                        <minimum>5</minimum>
                         <step>5</step>
                         <maximum>120</maximum>
                     </constraints>
@@ -116,9 +119,15 @@
                     <control type="toggle" />
                 </setting>
             </group>
+            <!-- Groups 4 and 5 carry no settings of their own; their labels
+                 render the two-line footnote about DPMS below the group above. -->
             <group id="4" label="32020" />
             <group id="5" label="32021">
-                <setting id="is_locked" type="boolean" help="">
+                <!-- Internal state, not meant for the user: set while our own
+                     video is playing so the screensaver hook shows the
+                     transparent placeholder instead of starting over. The
+                     dependency below is never true, which keeps it hidden. -->
+                <setting id="is_locked" type="boolean" label="32000" help="">
                     <level>0</level>
                     <default>false</default>
                     <dependencies>

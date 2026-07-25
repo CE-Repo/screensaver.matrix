@@ -1,68 +1,75 @@
-﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!--
+    Loading screen and video surface. Controls 32500 to 32502 make up the
+    loading overlay and disappear once the window property
+    "screensaver-matrix-loading" is set to the literal string "false".
+    Control 32503 carries the "no videos" message and stays empty otherwise.
+-->
 <window type="window">
     <controls>
-    	<control type="image">
-            <description>blackbackground</description>
+        <control type="image">
+            <description>Black backdrop behind everything else</description>
             <posx>0</posx>
             <posy>0</posy>
-            <colordiffuse>FF555555</colordiffuse>
-            <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
             <width>1920</width>
             <height>1080</height>
+            <colordiffuse>FF555555</colordiffuse>
+            <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
             <texture>black.jpg</texture>
         </control>
         <control type="image" id="32500">
             <description>Background image</description>
             <posx>0</posx>
             <posy>0</posy>
-            <colordiffuse>FF555555</colordiffuse>
-            <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
             <width>1920</width>
             <height>1080</height>
+            <colordiffuse>FF555555</colordiffuse>
+            <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
             <texture>main.jpg</texture>
             <visible>!String.IsEqual(Window.Property(screensaver-matrix-loading),"false")</visible>
         </control>
-		<control type="image" id ="32501">
-				<description>Busy animation</description>
-				<posx>40</posx>
-				<posy>1000</posy>
-				<width>30</width>
-				<height>30</height>
-				<texture>busy.png</texture>
-				<aspectratio>keep</aspectratio>
-				<animation effect="rotate" start="0" end="360" center="55,1015" time="1200" loop="true" condition="true">conditional</animation>
-				<visible>!String.IsEqual(Window.Property(screensaver-matrix-loading),"false")</visible>
-			</control>
-		<control type="label" id ="32502">
-				<top>975</top>
-				<left>90</left>
-				<width>600</width>
-				<height>90</height>
-				<font>font11</font>
-				<textcolor>88FFFFFF</textcolor>
-				<aligny>center</aligny>
-				<align>left</align>
-				<label></label>
-				<visible>!String.IsEqual(Window.Property(screensaver-matrix-loading),"false")</visible>
-		</control>
-		<control type="label" id="32503">
-				<top>975</top>
-				<left>40</left>
-				<width>600</width>
-				<height>90</height>
-				<font>font11</font>
-				<textcolor>88FFFFFF</textcolor>
-				<aligny>center</aligny>
-				<align>left</align>
-				<label></label>
-		</control>
-		<control type="videowindow">
-			<description>VideoWindow</description>
-		    <posx>0</posx>
-		    <posy>0</posy>
-		    <width>1920</width>
-		    <height>1080</height>
-		    <visible>true</visible>
-		</control>
-   </controls>
+        <control type="image" id="32501">
+            <description>Busy animation</description>
+            <posx>40</posx>
+            <posy>1000</posy>
+            <width>30</width>
+            <height>30</height>
+            <texture>busy.png</texture>
+            <aspectratio>keep</aspectratio>
+            <animation effect="rotate" start="0" end="360" center="55,1015" time="1200" loop="true" condition="true">conditional</animation>
+            <visible>!String.IsEqual(Window.Property(screensaver-matrix-loading),"false")</visible>
+        </control>
+        <control type="label" id="32502">
+            <description>Status text next to the busy animation</description>
+            <left>90</left>
+            <top>975</top>
+            <width>600</width>
+            <height>90</height>
+            <font>font11</font>
+            <textcolor>88FFFFFF</textcolor>
+            <align>left</align>
+            <aligny>center</aligny>
+            <label></label>
+            <visible>!String.IsEqual(Window.Property(screensaver-matrix-loading),"false")</visible>
+        </control>
+        <control type="label" id="32503">
+            <description>Message shown when there is nothing to play</description>
+            <left>40</left>
+            <top>975</top>
+            <width>600</width>
+            <height>90</height>
+            <font>font11</font>
+            <textcolor>88FFFFFF</textcolor>
+            <align>left</align>
+            <aligny>center</aligny>
+            <label></label>
+        </control>
+        <control type="videowindow">
+            <description>Listed last so the video covers the loading screen</description>
+            <posx>0</posx>
+            <posy>0</posy>
+            <width>1920</width>
+            <height>1080</height>
+        </control>
+    </controls>
 </window>
