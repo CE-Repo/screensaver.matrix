@@ -42,6 +42,19 @@
                     </constraints>
                     <control type="spinner" format="string" />
                 </setting>
+                <setting id="rain-churn" type="boolean" label="32099" help="32100">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="prepare-textures" type="action" label="32096" help="32097">
+                    <level>0</level>
+                    <data>RunAddon(screensaver.matrix,prepare)</data>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="button" format="action" />
+                </setting>
             </group>
             <group id="3" label="32014">
                 <setting id="check-dpms" type="integer" label="32015" help="32037">

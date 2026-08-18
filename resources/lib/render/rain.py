@@ -23,6 +23,7 @@ outside of it as well.
 """
 
 import os
+import shutil
 from collections import namedtuple
 from random import Random
 
@@ -56,9 +57,16 @@ LIGHT_WIDTH = 2
 #: glyphs and the same raindrops side by side.
 COLUMN_COUNT = 112
 
+#: Sets of stencils a column can be swapped between, and the share of its
+#: glyphs that changes from one set to the next. Swapping a column to the next
+#: set changes a handful of its glyphs and leaves the rest where they are,
+#: which is what the glyphs cycling in the original looks like.
+CHURN_SETS = 3
+CHURN_SHARE = 0.15
+
 #: Raised whenever the shape of the textures changes, so old files in the
 #: cache folder are not mistaken for current ones.
-CACHE_VERSION = 5
+CACHE_VERSION = 6
 
 #: Fixed seed for the glyph choice: the textures are cached on disk, and a
 #: stable seed means the same addon version always produces the same files.
@@ -113,9 +121,9 @@ def version_folder(folder, version):
     return os.path.join(folder, version.name)
 
 
-def _stencil_name(index, shape):
-    return "stencil-v{}-{}x{}-{:03d}.png".format(
-        CACHE_VERSION, shape.cell_width, shape.cell_height, index)
+def _stencil_name(index, shape, group):
+    return "stencil-v{}-{}x{}-{:03d}-{}.png".format(
+        CACHE_VERSION, shape.cell_width, shape.cell_height, index, group)
 
 
 def _light_name(index, shape):
@@ -123,15 +131,41 @@ def _light_name(index, shape):
         CACHE_VERSION, shape.row_pixels, shape.light_rows, index)
 
 
-def texture_paths(folder, version):
-    """Where one version's stencil and light textures live, existing or not."""
+def texture_paths(folder, version, sets=CHURN_SETS):
+    """Where one version's textures live, existing or not.
+
+    The stencils come as *sets* lists of one texture per column; the lights are
+    one list, because a column's raindrops do not change when its glyphs do.
+    """
     shape = geometry(version)
     inside = version_folder(folder, version)
-    stencils = [os.path.join(inside, _stencil_name(index, shape))
-                for index in range(COLUMN_COUNT)]
+    stencils = [[os.path.join(inside, _stencil_name(index, shape, group))
+                 for index in range(COLUMN_COUNT)]
+                for group in range(max(1, sets))]
     lights = [os.path.join(inside, _light_name(index, shape))
               for index in range(COLUMN_COUNT)]
     return stencils, lights
+
+
+def drop_folders(folder, keep):
+    """Delete the cached textures of variants that are not in *keep*.
+
+    Returns the names of the variants that were dropped.
+    """
+    dropped = []
+    if not os.path.isdir(folder):
+        return dropped
+    for name in sorted(os.listdir(folder)):
+        path = os.path.join(folder, name)
+        if name in keep or not os.path.isdir(path):
+            continue
+        try:
+            shutil.rmtree(path)
+            dropped.append(name)
+        except OSError:
+            # A leftover we cannot delete costs disk space and nothing else.
+            pass
+    return dropped
 
 
 def _drop_stale(folder, current):
@@ -183,11 +217,28 @@ class _Punch:
         return rows
 
 
-def _stencil(punch, random, glyph_count, shape):
+def _sequences(random, glyph_count, shape, sets):
+    """The glyph in every cell of a column, once per set of stencils.
+
+    The first set is rolled at random; each one after it takes the set before
+    it and rolls a share of its cells again.
+    """
+    sequence = [random.randrange(glyph_count) for _ in range(shape.rows)]
+    sequences = [sequence]
+    changes = max(1, int(round(shape.rows * CHURN_SHARE)))
+    for _ in range(sets - 1):
+        sequence = list(sequence)
+        for cell in random.sample(range(shape.rows), changes):
+            sequence[cell] = random.randrange(glyph_count)
+        sequences.append(sequence)
+    return sequences
+
+
+def _stencil(punch, sequence):
     """One column of glyphs, as the scanlines of a stencil texture."""
     scanlines = []
-    for _ in range(shape.rows):
-        scanlines.extend(punch.get(random.randrange(glyph_count)))
+    for glyph in sequence:
+        scanlines.extend(punch.get(glyph))
     return scanlines
 
 
@@ -206,7 +257,7 @@ def _light(column, version, shape):
     return scanlines
 
 
-def generate(folder, version, on_progress=None):
+def generate(folder, version, on_progress=None, sets=CHURN_SETS):
     """Write every missing texture of *version* and return their paths.
 
     *on_progress* is called with the number of textures done and the total,
@@ -215,10 +266,11 @@ def generate(folder, version, on_progress=None):
     shape = geometry(version)
     inside = version_folder(folder, version)
     os.makedirs(inside, exist_ok=True)
-    stencils, lights = texture_paths(folder, version)
-    _drop_stale(inside, stencils + lights)
+    stencils, lights = texture_paths(folder, version, sets)
+    every = [path for group in stencils for path in group] + lights
+    _drop_stale(inside, every)
 
-    missing = [path for path in stencils + lights if not os.path.exists(path)]
+    missing = [path for path in every if not os.path.exists(path)]
     if not missing:
         return stencils, lights
 
@@ -228,7 +280,9 @@ def generate(folder, version, on_progress=None):
     punch = None
 
     for index in range(COLUMN_COUNT):
-        if stencils[index] in outstanding:
+        wanted = [group for group in range(len(stencils))
+                  if stencils[group][index] in outstanding]
+        if wanted:
             if punch is None:
                 # The background of a stencil is the colour the palette holds
                 # where nothing is lit, which is black for every version but
@@ -239,14 +293,17 @@ def generate(folder, version, on_progress=None):
                                            version.glyph_edge_crop),
                                shape, background)
             # Seeded per column, so an interrupted run resumes with the same
-            # textures it would have written the first time.
-            random = Random(_SEED + index)
-            _write(stencils[index], shape.cell_width,
-                   shape.rows * shape.cell_height,
-                   _stencil(punch, random, len(punch.coverage_maps), shape))
-            done += 1
-            if on_progress:
-                on_progress(done, total)
+            # textures it would have written the first time, and so a set
+            # added later still matches the ones already on disk.
+            sequences = _sequences(Random(_SEED + index),
+                                   len(punch.coverage_maps), shape, len(stencils))
+            for group in wanted:
+                _write(stencils[group][index], shape.cell_width,
+                       shape.rows * shape.cell_height,
+                       _stencil(punch, sequences[group]))
+                done += 1
+                if on_progress:
+                    on_progress(done, total)
 
         if lights[index] in outstanding:
             _write(lights[index], LIGHT_WIDTH,

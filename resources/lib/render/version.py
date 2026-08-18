@@ -68,6 +68,10 @@ DEFAULTS = {
     "debug": False,
     #: Whether the variant is switched on for a fresh install
     "enabled": True,
+    #: Raises the brightness to stand in for the effects this port leaves out.
+    #: Only for variants that lean on one of them to light the screen up at
+    #: all; everything else is drawn at the brightness the shader computes.
+    "lift": 1.0,
 }
 
 
@@ -98,8 +102,11 @@ _VERSIONS = (
         columns=40,
     ),
     Version(
-        # Drops the thunder and the slanted grid
+        # Drops the thunder and the slanted grid. The thunder is what lights
+        # this one up -- it multiplies the brightness by up to eleven -- so
+        # without it the variant is lifted instead of left nearly black.
         "nightmare", 32067,
+        lift=2.2,
         font="gothic",
         isolate_cursor=False,
         base_brightness=-0.8,
@@ -145,8 +152,10 @@ _VERSIONS = (
         ),
     ),
     Version(
-        # Drops the curved grid and the ripples
+        # Drops the curved grid and the ripples. Its bloom carries a good
+        # part of the brightness, and that is not ported either.
         "paradise", 32070,
+        lift=1.5,
         font="coptic",
         isolate_cursor=False,
         base_brightness=-1.3,

@@ -9,24 +9,24 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: de\n"
+"Language: it\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgctxt "#32000"
 msgid "Matrix Screensaver"
-msgstr "Matrix-Bildschirmschoner"
+msgstr "Salvaschermo Matrix"
 
 msgctxt "#32010"
 msgid "Instantiated. Please wait..."
-msgstr "Instanziiert. Bitte warten..."
+msgstr "Avvio in corso. Attendere..."
 
 msgctxt "#32011"
 msgid "Show start notification"
-msgstr "Startbenachrichtigung anzeigen"
+msgstr "Mostra una notifica all'avvio"
 
 msgctxt "#32013"
 msgid "Initializing..."
-msgstr "Initialisierung..."
+msgstr "Inizializzazione..."
 
 msgctxt "#32014"
 msgid "DPMS*"
@@ -38,27 +38,27 @@ msgstr "DPMS"
 
 msgctxt "#32016"
 msgid "Toggle display off"
-msgstr "Display ausschalten"
+msgstr "Spegnere lo schermo"
 
 msgctxt "#32017"
 msgid "Put playing device on standby via a CEC"
-msgstr "Wiedergabegerät über CEC in den Standby-Modus versetzen"
+msgstr "Mettere il dispositivo in standby tramite CEC"
 
 msgctxt "#32019"
 msgid "General settings"
-msgstr "Allgemeine Einstellungen"
+msgstr "Impostazioni generali"
 
 msgctxt "#32020"
 msgid "* DPMS will check for the Power Saving Kodi settings and stop the screensaver"
-msgstr "* DPMS prüft die Kodi-Einstellungen zum Energiesparen und stoppt den Bildschirmschoner"
+msgstr "* DPMS legge le impostazioni di risparmio energetico di Kodi e ferma il salvaschermo"
 
 msgctxt "#32021"
 msgid "if the maximum allowed time to put the display to sleep is exceeded"
-msgstr "wenn die maximal zulässige Zeit für den Ruhezustand des Displays überschritten wird"
+msgstr "se viene superato il tempo massimo consentito prima dello spegnimento dello schermo"
 
 msgctxt "#32022"
 msgid "Off"
-msgstr "Aus"
+msgstr "Disattivato"
 
 msgctxt "#32023"
 msgid "Kodi"
@@ -66,43 +66,43 @@ msgstr "Kodi"
 
 msgctxt "#32024"
 msgid "Manual"
-msgstr "Manuell"
+msgstr "Manuale"
 
 msgctxt "#32025"
 msgid "Manual timeout to activate DPMS (min)"
-msgstr "Manuelle Zeitüberschreitung zur Aktivierung von DPMS (in Minuten)"
+msgstr "Tempo manuale prima del DPMS (min)"
 
 msgctxt "#32026"
 msgid "DPMS action"
-msgstr "DPMS-Aktion"
+msgstr "Azione DPMS"
 
 msgctxt "#32027"
 msgid "Pause the rain"
-msgstr "Regen pausieren"
+msgstr "Mettere in pausa la pioggia"
 
 msgctxt "#32028"
 msgid "Stop the rain"
-msgstr "Regen stoppen"
+msgstr "Fermare la pioggia"
 
 msgctxt "#32029"
 msgid "Show preview window"
-msgstr "Vorschaufenster anzeigen"
+msgstr "Mostrare la finestra di attesa"
 
 msgctxt "#32033"
 msgid "Displays a notification when the screensaver starts"
-msgstr "Zeigt eine Benachrichtigung an, wenn der Bildschirmschoner startet"
+msgstr "Mostra una notifica quando parte il salvaschermo"
 
 msgctxt "#32034"
 msgid "Shows a loading screen before the rain starts"
-msgstr "Zeigt einen Ladebildschirm, bevor der Regen startet"
+msgstr "Mostra una schermata di caricamento prima che inizi la pioggia"
 
 msgctxt "#32037"
 msgid "Display Power Management Signaling (DPMS)"
-msgstr "Auch als Display-Energiesparmodus bekannt"
+msgstr "Display Power Management Signaling (DPMS)"
 
 msgctxt "#32039"
 msgid "General"
-msgstr "Allgemein"
+msgstr "Generale"
 
 msgctxt "#32061"
 msgid "Bugs"
@@ -110,7 +110,7 @@ msgstr "Bugs"
 
 msgctxt "#32062"
 msgid "Classic"
-msgstr "Klassisch"
+msgstr "Classico"
 
 msgctxt "#32064"
 msgid "Debug"
@@ -118,35 +118,35 @@ msgstr "Debug"
 
 msgctxt "#32065"
 msgid "Megacity (Revolutions)"
-msgstr "Megastadt (Revolutions)"
+msgstr "Megalopoli (Revolutions)"
 
 msgctxt "#32066"
 msgid "Morpheus"
-msgstr "Morpheus"
+msgstr "Morfeo"
 
 msgctxt "#32067"
 msgid "Nightmare"
-msgstr "Albtraum"
+msgstr "Incubo"
 
 msgctxt "#32068"
 msgid "Operator"
-msgstr "Operator"
+msgstr "Operatore"
 
 msgctxt "#32069"
 msgid "Palimpsest"
-msgstr "Palimpsest"
+msgstr "Palinsesto"
 
 msgctxt "#32070"
 msgid "Paradise"
-msgstr "Paradies"
+msgstr "Paradiso"
 
 msgctxt "#32071"
 msgid "Rainbow"
-msgstr "Regenbogen"
+msgstr "Arcobaleno"
 
 msgctxt "#32072"
 msgid "Resurrections"
-msgstr "Wiederauferstehung (Resurrections)"
+msgstr "Resurrections"
 
 msgctxt "#32073"
 msgid "Trinity"
@@ -154,76 +154,76 @@ msgstr "Trinity"
 
 msgctxt "#32074"
 msgid "Twilight"
-msgstr "Dämmerung"
+msgstr "Crepuscolo"
 
 msgctxt "#32081"
 msgid "Generating the code rain..."
-msgstr "Code-Regen wird erzeugt..."
+msgstr "Generazione della pioggia di codice..."
 
 msgctxt "#32082"
 msgid "The code rain could not be generated."
-msgstr "Der Code-Regen konnte nicht erzeugt werden."
+msgstr "Non è stato possibile generare la pioggia di codice."
 
 msgctxt "#32083"
 msgid "Speed of the code rain"
-msgstr "Geschwindigkeit des Code-Regens"
+msgstr "Velocità della pioggia di codice"
 
 msgctxt "#32084"
 msgid "How fast the columns fall. Normal is the pace the variant sets for itself."
-msgstr "Wie schnell die Spalten fallen. Normal ist das Tempo, das die Variante selbst vorgibt."
+msgstr "Quanto velocemente cadono le colonne. Normale è il ritmo proprio di ogni variante."
 
 msgctxt "#32085"
 msgid "Slow"
-msgstr "Langsam"
+msgstr "Lenta"
 
 msgctxt "#32086"
 msgid "Normal"
-msgstr "Normal"
+msgstr "Normale"
 
 msgctxt "#32087"
 msgid "Fast"
-msgstr "Schnell"
+msgstr "Veloce"
 
 msgctxt "#32088"
 msgid "Very fast"
-msgstr "Sehr schnell"
+msgstr "Molto veloce"
 
 msgctxt "#32091"
 msgid "Code rain"
-msgstr "Code-Regen"
+msgstr "Pioggia di codice"
 
 msgctxt "#32092"
 msgid "Variants"
-msgstr "Varianten"
+msgstr "Varianti"
 
 msgctxt "#32093"
 msgid "Minutes per variant (0 = never change)"
-msgstr "Minuten pro Variante (0 = unendlich)"
+msgstr "Minuti per variante (0 = non cambiare mai)"
 
 msgctxt "#32094"
 msgid "How long one variant stays on screen before the next one is picked at random. Zero keeps the one it started with."
-msgstr "Wie lange eine Variante zu sehen ist, bevor zufällig die nächste gewählt wird. Bei Null bleibt es bei der ersten."
+msgstr "Per quanto tempo una variante resta sullo schermo prima che ne venga scelta un'altra a caso. Zero mantiene quella iniziale."
 
 msgctxt "#32095"
 msgid "Include this variant in the rotation."
-msgstr "Diese Variante in den Wechsel einbeziehen."
+msgstr "Includere questa variante nella rotazione."
 
 msgctxt "#32096"
 msgid "Prepare textures now"
-msgstr "Texturen jetzt vorbereiten"
+msgstr "Preparare ora le texture"
 
 msgctxt "#32097"
 msgid "Builds the textures of every variant that is switched on, instead of waiting for each one the first time it appears, and drops the ones that are switched off from the cache."
-msgstr "Erzeugt die Texturen aller eingeschalteten Varianten, statt bei jeder auf ihr erstes Erscheinen zu warten, und wirft die ausgeschalteten aus dem Zwischenspeicher."
+msgstr "Genera le texture di tutte le varianti attive, invece di attendere alla prima comparsa di ognuna, e toglie dalla cache quelle disattivate."
 
 msgctxt "#32098"
 msgid "Preparing the textures..."
-msgstr "Texturen werden vorbereitet..."
+msgstr "Preparazione delle texture..."
 
 msgctxt "#32099"
 msgid "Let the glyphs change"
-msgstr "Glyphen wechseln lassen"
+msgstr "Lasciare che i glifi cambino"
 
 msgctxt "#32100"
 msgid "Glyphs swap for others now and then, the way they do in the films. Switching this off saves about two thirds of the space the textures take."
-msgstr "Glyphen tauschen sich hin und wieder aus, wie in den Filmen. Ausgeschaltet spart das etwa zwei Drittel des Platzes, den die Texturen brauchen."
+msgstr "I glifi vengono sostituiti di tanto in tanto, come nei film. Disattivarlo fa risparmiare circa due terzi dello spazio occupato dalle texture."

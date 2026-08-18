@@ -122,7 +122,9 @@ def colour(lit, is_cursor, version):
             and base > version.brightness_threshold):
         # Versions that do not fade their glyphs pin them to one brightness
         base = version.brightness_override
-    base = min(1.0, max(0.0, base))
+    # Whatever is left after that is what the shader would hand to the palette,
+    # bar the effects this port does not have; the lift stands in for those.
+    base = min(1.0, max(0.0, base * version.lift))
 
     if is_cursor:
         # The palette contributes nothing to a cursor; its colour is added on

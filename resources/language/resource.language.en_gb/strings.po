@@ -77,11 +77,11 @@ msgid "DPMS action"
 msgstr ""
 
 msgctxt "#32027"
-msgid "Pause Video"
+msgid "Pause the rain"
 msgstr ""
 
 msgctxt "#32028"
-msgid "Stop Video"
+msgid "Stop the rain"
 msgstr ""
 
 msgctxt "#32029"
@@ -169,7 +169,7 @@ msgid "Speed of the code rain"
 msgstr ""
 
 msgctxt "#32084"
-msgid "How fast the columns fall. Normal matches the speed of the rendered videos."
+msgid "How fast the columns fall. Normal is the pace the variant sets for itself."
 msgstr ""
 
 msgctxt "#32085"
@@ -206,4 +206,24 @@ msgstr ""
 
 msgctxt "#32095"
 msgid "Include this variant in the rotation."
+msgstr ""
+
+msgctxt "#32096"
+msgid "Prepare textures now"
+msgstr ""
+
+msgctxt "#32097"
+msgid "Builds the textures of every variant that is switched on, instead of waiting for each one the first time it appears, and drops the ones that are switched off from the cache."
+msgstr ""
+
+msgctxt "#32098"
+msgid "Preparing the textures..."
+msgstr ""
+
+msgctxt "#32099"
+msgid "Let the glyphs change"
+msgstr ""
+
+msgctxt "#32100"
+msgid "Glyphs swap for others now and then, the way they do in the films. Switching this off saves about two thirds of the space the textures take."
 msgstr ""

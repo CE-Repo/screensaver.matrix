@@ -12,19 +12,22 @@ variants taking turns.
 - **The code rain, generated**: nothing is played back, everything is drawn
 - **13 variants** from Rezmason's project, each with its own glyphs, colours,
   density and speed, and each switchable on its own
+- **The glyphs cycle**, the way they do in the films
 - **They take turns**: one is picked at random, held for as long as you like,
   then the next
 - **Display power management (DPMS)** -- after a configurable idle time the
   scene is stopped and the display is switched off or put into standby via
   HDMI-CEC
 - Gets out of the way when something else is already playing
-- English and German UI
+- UI in English, German, French, Spanish, Italian, Dutch, Polish and Russian
 
 ## Requirements
 
-- Any platform Kodi runs on. No internet connection and no storage worth
-  mentioning: the addon ships 680 KB of glyph atlases and generates about a
-  megabyte of textures per variant into its own profile folder.
+- Any platform Kodi runs on. No internet connection: the addon ships 680 KB of
+  glyph atlases and generates its textures itself. All thirteen variants
+  together come to 33 MB in the profile folder, or 12 MB with the glyphs left
+  as they are -- a variant is only ever built once, and only if it is switched
+  on.
 
 ## Installation
 
@@ -54,6 +57,8 @@ For development you can also drop the folder straight into your Kodi
 | --- | --- |
 | Minutes per variant | How long one variant stays up before the next is picked, 1 to 60. Zero, at the left end of the slider, keeps the one it started with |
 | Speed of the code rain | Scales the pace every variant sets for itself |
+| Let the glyphs change | Glyphs swap for others now and then; switching it off saves two thirds of the cache |
+| Prepare textures now | Builds every switched-on variant in one go, and drops the switched-off ones from the cache |
 
 ### DPMS
 
@@ -99,8 +104,11 @@ screensaver runs so a restart cannot repeat it either.
 
 Trinity, Morpheus and Bugs are drawn in perspective in the original, which a
 stack of flat images cannot do; they are drawn flat here, with everything else
-they configure intact. Nightmare leans on its thunder to light the screen up,
-so without it the variant stays dark; that is what its raw output looks like.
+they configure intact. Nightmare leans on its thunder to light the screen up
+and Paradise on its bloom, and neither is ported, so both would be nearly black
+on their own. They are the only two whose brightness is raised to stand in for
+what is missing -- `lift` in `render/version.py`; everything else is drawn at
+the brightness the shader computes.
 
 ## How it works
 
@@ -175,9 +183,12 @@ Python in two dozen steps, eased at both ends.
 Three things in the original need per-frame, per-glyph work that a scrolling
 texture cannot do, and they are left out of every variant:
 
-* **Glyphs do not change.** In the original every glyph swaps for another one
-  about twice a second. Here the stencil is a fixed image, so a column keeps
-  its glyphs for as long as it is on screen.
+* **Glyphs change, but far more slowly.** In the original every glyph swaps
+  for another one about twice a second. A stencil holds a whole column, so a
+  column is swapped between three of them instead, each differing from the
+  last in about a seventh of its glyphs. Eight columns a second are swapped,
+  which comes to roughly sixty glyphs a second across the screen against the
+  several thousand the original manages.
 * **No bloom.** The original blurs the bright parts back over the image, which
   is a second render pass.
 * **The wobble repeats.** Its two sine waves run at sqrt(2) and sqrt(5) and so
@@ -196,7 +207,7 @@ imports are absolute (`from core.addon import ...`).
 addon.xml
 resources/
   settings.xml
-  language/                the .po files (en_gb, de_de)
+  language/                the .po files (en_gb is the source, seven translations)
   glyphs/                  the glyph atlases of the code rain, and their licence
   skins/default/           the window definitions (1080i, scaled by Kodi)
   lib/
@@ -211,6 +222,7 @@ resources/
       skin.py                window definitions and control ids
       base.py                what the screensaver windows have in common
       rain.py                the rain window, and the variants taking turns
+      prepare.py             the "prepare textures now" action from the settings
       preview.py             the loading screen shown before the rain starts
       transparent.py         placeholder shown while the rain is already up
     render/
@@ -249,7 +261,8 @@ filtering `kodi.log` for that string shows the whole story:
 | A long pause before the first frame | The textures of that variant are being generated; it happens once per variant and the loading screen shows the progress |
 | *"The code rain could not be generated"* | The profile folder is not writable |
 | Always the same variant | Minutes per variant is 0, only one variant is switched on, or all of them are off and it fell back to Classic |
-| One variant looks far darker than the rest | Nightmare, which relies on the thunder effect that is not ported |
+| One variant looks far darker than the rest | Nightmare and Paradise rely on effects that are not ported; they are lifted, but only so far |
+| The profile folder is large | Every variant that has been shown is cached; `Prepare textures now` drops the ones that are switched off, and `Let the glyphs change` off cuts the rest by two thirds |
 
 ## Screenshots
 

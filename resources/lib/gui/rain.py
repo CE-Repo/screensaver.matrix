@@ -38,6 +38,13 @@ TEXTURE_FOLDER = "rain"
 SPEED_FACTORS = (1.75, 1.0, 0.7, 0.5)
 NORMAL_SPEED = 1
 
+#: Columns swapped to their next set of glyphs per second, and how often the
+#: swapping is done. In the original every glyph changes about twice a second;
+#: a texture holds a whole column, so this changes a handful of glyphs at a
+#: time in one column instead, which is as close as a texture gets.
+CHURN_PER_SECOND = 8
+TICK_SECONDS = 0.25
+
 #: Minutes a variant stays up before the next one takes over. Zero means it
 #: stays for as long as the screensaver is up.
 DEFAULT_INTERVAL = 5
@@ -74,6 +81,11 @@ _SLIDE = ("effect=slide start=0,0 end=0,{distance} time={duration} "
 def texture_folder():
     """Where the generated textures are kept between runs."""
     return os.path.join(profile_folder(), TEXTURE_FOLDER)
+
+
+def churn_sets():
+    """How many sets of glyphs a column may be swapped between."""
+    return rain.CHURN_SETS if get_bool("rain-churn", default=True) else 1
 
 
 def enabled_versions():
@@ -119,6 +131,10 @@ class RainScreensaver(ScreensaverWindow):
         self.columns = []
         #: The black cover the variant change happens behind
         self.cover = None
+        #: Every column's stencil, which texture it draws and which set that
+        #: texture came from, so the glyphs can be cycled
+        self.churn = []
+        self.stencil_sets = []
 
     def onInit(self):
         # Kodi calls onInit again whenever the window is re-created; the
@@ -140,6 +156,12 @@ class RainScreensaver(ScreensaverWindow):
 
     def run_scene(self):
         """Show one variant after another for as long as the window is up."""
+        # Textures of variants this addon no longer has are of no use to
+        # anyone. The ones merely switched off are left alone: switching one
+        # back on should not mean building it again.
+        rain.drop_folders(texture_folder(),
+                          set(known.name for known in version.VERSIONS))
+
         variants = enabled_versions()
         upcoming = self.in_random_order(get_string(LAST_VARIANT))
 
@@ -147,6 +169,9 @@ class RainScreensaver(ScreensaverWindow):
             return
         self.setProperty(skin.LOADING_PROPERTY, skin.LOADING_OFF)
         if len(variants) < 2 or self.interval() == FOREVER:
+            # Nothing to change to, but the glyphs still have to keep cycling,
+            # so the tick carries on for as long as the window is up.
+            self.hold(float("inf"))
             return
 
         shown_at = time.monotonic()
@@ -192,18 +217,33 @@ class RainScreensaver(ScreensaverWindow):
         return max(FOREVER, minutes) * 60
 
     def hold(self, seconds):
-        """Wait, returning False if the window closed while we did."""
-        waited = 0
+        """Wait, cycling glyphs as we go, until the time is up."""
+        waited = 0.0
         while self.active and waited < seconds:
-            if monitor.waitForAbort(1):
+            if monitor.waitForAbort(TICK_SECONDS):
                 return False
-            waited += 1
+            waited += TICK_SECONDS
+            self.cycle_glyphs()
         return self.active
+
+    def cycle_glyphs(self):
+        """Swap a few columns to their next set of glyphs."""
+        if len(self.stencil_sets) < 2:
+            return
+        for _ in range(max(1, int(round(CHURN_PER_SECOND * TICK_SECONDS)))):
+            column = random.choice(self.churn)
+            column[2] = (column[2] + 1) % len(self.stencil_sets)
+            try:
+                column[0].setImage(self.stencil_sets[column[2]][column[1]])
+            except Exception as exc:
+                # The window may be closing; there is nothing left to cycle.
+                logger.debug("Could not cycle a column: {}".format(exc))
+                return
 
     def prepare(self, variant):
         """Build a variant's textures, returning False if that is impossible."""
         try:
-            rain.generate(texture_folder(), variant)
+            rain.generate(texture_folder(), variant, sets=churn_sets())
         except OSError as exc:
             logger.error("Could not generate the rain textures: {}".format(exc))
             return False
@@ -215,7 +255,7 @@ class RainScreensaver(ScreensaverWindow):
         """Replace whatever is on screen with *variant*."""
         try:
             stencils, lights = rain.generate(
-                texture_folder(), variant, on_progress)
+                texture_folder(), variant, on_progress, churn_sets())
         except OSError as exc:
             logger.error("Could not generate the rain textures: {}".format(exc))
             self.show_message(32082)
@@ -259,6 +299,19 @@ class RainScreensaver(ScreensaverWindow):
                 return False
         return True
 
+    def pause_scene(self):
+        """Take the columns off the screen when the display is switched off.
+
+        Kodi processes and renders only the controls that are visible, so
+        hiding them is what actually stops the work; the window itself stays
+        up, which is the point of pausing rather than stopping.
+        """
+        for control in self.columns:
+            try:
+                control.setVisible(False)
+            except Exception as exc:
+                logger.debug("Could not hide a column: {}".format(exc))
+
     def clear_columns(self):
         """Take the current variant off the screen."""
         if not self.columns:
@@ -270,6 +323,7 @@ class RainScreensaver(ScreensaverWindow):
             logger.debug("Could not remove the previous columns: {}".format(exc))
         self.columns = []
         self.cover = None
+        self.churn = []
 
     def report_progress(self, done, total):
         """Show how far the one-off texture generation has come."""
@@ -316,6 +370,7 @@ class RainScreensaver(ScreensaverWindow):
         count = max(1, int(round(width * shape.rows
                                  * variant.glyph_height_to_width / float(height))))
 
+        self.stencil_sets = stencils
         controls, animations = [], []
         for index in range(count):
             # Derived from the window width rather than from a cell size, so
@@ -330,7 +385,8 @@ class RainScreensaver(ScreensaverWindow):
                 colorDiffuse=stripe_tint(variant, index, count))
             stencil = xbmcgui.ControlImage(
                 left, 0, column_width, height,
-                stencils[texture], aspectRatio=0)
+                stencils[0][texture], aspectRatio=0)
+            self.churn.append([stencil, texture, 0])
 
             # The stencil is added after the light so it covers it; a column
             # is only ever visible through the glyphs punched out of it.
