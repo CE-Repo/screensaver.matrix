@@ -10,8 +10,8 @@ file at all.
 ## Features
 
 - **17 scenes**, each individually switchable in the settings
-- **Live code rain**, drawn by the addon with the films' own glyphs instead of
-  played from a file: no video, no download, no network, and it starts instantly
+- **Live code rain**, a port of Rezmason's WebGL renderer drawn by the addon
+  itself instead of played from a file: no video, no download, no network
 - **1080p / 60 fps**, shuffled and looped for as long as the screensaver is up
 - **Streaming or offline** — play straight from the web, or download the videos
   once (~5.85 GB in total) and never touch the network again
@@ -115,38 +115,59 @@ The same happens automatically when the video rotation ends up empty -- offline
 mode with nothing downloaded, or every scene switched off -- so the screen shows
 the Matrix instead of a message.
 
-Kodi's Python API has no drawing surface and no access to shaders, so the rain
-is built out of the two things a Python addon does have: image controls and the
-skin engine's animations.
+It is a port of [Rezmason/matrix](https://github.com/Rezmason/matrix), the
+WebGL project the videos were rendered with. Its shaders describe the effect as
+two separate things: a grid of glyphs that **stay where they are**, and a
+brightness that travels down **through** them. Getting that the right way round
+is what makes the rain look alive rather than like a texture being dragged
+across the screen.
 
-1. `render/glyphs.py` cuts the 57 glyphs out of `resources/glyphs/`, the
-   films' own glyph atlas from [Rezmason/matrix](https://github.com/Rezmason/matrix).
-   The atlas is a distance field rather than a picture, so the module first
-   turns it into coverage maps with clean, smooth edges. A font would not do
-   here: Kodi resolves fonts against the active skin, and these characters are
-   not part of it.
-2. `render/rain.py` assembles those glyphs into one texture per column --
-   trails that fade out behind a bright head, a few faint background glyphs,
-   and the whole pattern stacked twice so it can scroll seamlessly. The
-   textures are written with a small PNG encoder in `render/png.py`, because
-   Kodi ships no imaging library.
-3. `gui/rain.py` puts one image control per column on screen and gives each a
-   looping slide animation that travels exactly one screen height, at a speed
-   of its own.
+Kodi's Python API has no drawing surface and no access to shaders, but it can
+stack two images, which is enough to do the same thing inside out. Every column
+is two controls:
 
-Each column falls one screen height every 1.5 to 3 seconds, which is the pace
-Rezmason's renderer sets: its columns advance 100 * `fallSpeed` glyphs per
-second, scaled per column by a random 0.5 to 1.0. The `Speed of the code rain`
-setting scales that range.
+* the **light** underneath: a narrow bar of colour, one band per grid row,
+  scrolling downwards on a looping slide animation. It carries the raindrops
+  and nothing else -- no glyphs at all.
+* the **stencil** on top: black, with the column's glyphs punched out of it,
+  and it never moves. The light is only ever visible in the shape of a glyph.
 
-From then on the skin engine moves the columns, so the rain runs at the skin's
-frame rate with no per-frame work in Python at all. The grid is 45 glyphs tall,
-which puts 80 columns on a 16:9 screen -- the same density Rezmason's renderer
-uses by default -- and the window derives the column count from the aspect
-ratio, so the glyphs stay square from 720p up to ultra-wide. Generating all 112
-textures takes about a second and only happens once: they are cached in the
-addon's profile folder (`addon_data/screensaver.matrix/rain`) and reused from
-there, and textures left behind by an older version are cleaned out.
+So the glyphs sit still and the light falls through them, exactly as in the
+original, while the skin engine only has to move one control per column.
+
+| Module | What it does |
+| --- | --- |
+| `render/raindrop.py` | The port itself: the raindrop wave, the wobble that varies drop lengths, the cursor at the head of each drop, and the palette. Constants come from `js/config.js` in that project |
+| `render/glyphs.py` | Cuts the 57 glyphs out of `resources/glyphs/`, the films' own glyph atlas. It is a distance field rather than a picture, so the module turns it into coverage maps with clean edges. A font would not do: Kodi resolves fonts against the active skin |
+| `render/rain.py` | Builds and caches the stencil and light textures |
+| `render/png.py` | A minimal PNG codec, because Kodi ships no imaging library |
+| `gui/rain.py` | Puts the controls on screen and gives each light its animation |
+
+The grid is 45 glyphs tall, which puts 80 columns on a 16:9 screen -- the
+density Rezmason's renderer uses by default -- and the window derives the
+column count from the aspect ratio, so the glyphs stay square from 720p up to
+ultra-wide. Each column falls at a speed of its own, between half and full,
+the way the shader picks it; `Speed of the code rain` scales the whole range.
+Generating all 224 textures takes about a second and only happens once: they
+are cached in the addon's profile folder
+(`addon_data/screensaver.matrix/rain`) and reused from there, and textures left
+behind by an older version are cleaned out.
+
+### Where the port stops
+
+Three things in the original need per-frame, per-glyph work that a scrolling
+texture cannot do, and they are left out:
+
+* **Glyphs do not change.** In the original every glyph swaps for another one
+  about twice a second. Here the stencil is a fixed image, so a column keeps
+  its glyphs for as long as the screensaver runs.
+* **No bloom.** The original blurs the bright parts back over the image, which
+  is a second render pass.
+* **The wobble repeats.** Its two sine waves run at sqrt(2) and sqrt(5) and so
+  never line up again; a texture has to. They are moved onto the nearest whole
+  number of cycles per loop, which stays within a tenth of the originals and
+  keeps the drop lengths varied, but a column does repeat itself after five
+  raindrops.
 
 ## Project layout
 
@@ -182,8 +203,9 @@ resources/
       playlist.py            builds the shuffled rotation from playlist.json
       player.py              the xbmc.Player subclass used for playback
     render/
+      raindrop.py            the ported rain algorithm: waves, cursors, palette
       glyphs.py              cuts the glyphs out of the distance field atlas
-      rain.py                builds and caches the column textures
+      rain.py                builds and caches the stencil and light textures
       png.py                 minimal PNG codec for the atlas and the textures
     download/
       picker.py              the "Download Videos" selection dialog
@@ -245,10 +267,12 @@ common questions:
 
 ## Credits
 
-The glyph atlas in `resources/glyphs/` is taken unchanged from
-[Rezmason/matrix](https://github.com/Rezmason/matrix), MIT licensed, copyright
-(c) 2018 Rezmason. Its licence text sits next to it and has to stay with the
-file. That project is also where the videos were rendered.
+The live code rain is a port of [Rezmason/matrix](https://github.com/Rezmason/matrix),
+MIT licensed, copyright (c) 2018 Rezmason -- both the algorithm in
+`resources/lib/render/raindrop.py` and the glyph atlas in `resources/glyphs/`,
+which is taken from it unchanged. The atlas carries its licence text next to
+it, and that has to stay with the file. That project is also where the videos
+were rendered.
 
 Videos are hosted at
 [CE-Repo/screensaver.matrix-videos](https://github.com/CE-Repo/screensaver.matrix-videos).
