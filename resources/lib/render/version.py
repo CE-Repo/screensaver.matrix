@@ -68,6 +68,8 @@ DEFAULTS = {
     "debug": False,
     #: Whether the variant is switched on for a fresh install
     "enabled": True,
+    #: Drawn as columns flying past the viewer rather than as a flat grid
+    "volumetric": False,
 }
 
 
@@ -182,8 +184,8 @@ _VERSIONS = (
         ),
     ),
     Version(
-        # Drops the perspective it is normally drawn in
         "3d", 32058,
+        volumetric=True,
         base_brightness=-0.9,
         base_contrast=1.5,
         fall_speed=0.5,

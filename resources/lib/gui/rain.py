@@ -16,6 +16,7 @@ the change itself is immediate, and a black cover is faded over the picture
 while it happens.
 """
 
+import math
 import os
 import random
 import threading
@@ -58,6 +59,30 @@ FALLBACK_WIDTH, FALLBACK_HEIGHT = 1920, 1080
 #: two thirds of a second is smooth and costs two dozen calls.
 FADE_MILLISECONDS = 700
 FADE_STEPS = 24
+
+#: A volumetric variant draws columns flying past the viewer instead of a flat
+#: grid: how many are in flight at once, how long one takes to travel from the
+#: vanishing point to past the edge of the screen, the scale it starts at as a
+#: percentage, and how far it may grow.
+FLYING_COLUMNS = 40
+MIN_APPROACH, MAX_APPROACH = 8000, 16000
+FAR_SCALE = 7.0
+MAX_SCALE = 4.0
+
+#: How often the flight is looked over for columns that have flown past
+TICK_SECONDS = 0.25
+
+#: A column grows about the middle of the screen, which is what puts it on a
+#: course away from the vanishing point, and picks up speed as it nears. An
+#: approach really accelerates like a square, but easing it in along a sine
+#: keeps more columns at the middle distances, where they can be read.
+_ZOOM = ("effect=zoom start={start:.1f} end={end:.1f} center={x},{y} "
+         "time={duration} tween=sine easing=in condition=true "
+         "reversible=false")
+
+#: Distance dims a column, the way depth dims the glyphs in the original
+_APPROACH_FADE = ("effect=fade start=30 end=100 time={duration} "
+                  "condition=true reversible=false")
 
 #: The alpha the cover is drawn at, covering everything and covering nothing.
 #: "Nothing" is one rather than zero on purpose: Kodi skips a diffuse colour
@@ -119,6 +144,10 @@ class RainScreensaver(ScreensaverWindow):
         self.columns = []
         #: The black cover the variant change happens behind
         self.cover = None
+        #: Columns in flight, as (controls, when they have flown past), and
+        #: what is needed to launch their replacements
+        self.strips = []
+        self.flight = None
 
     def onInit(self):
         # Kodi calls onInit again whenever the window is re-created; the
@@ -147,6 +176,9 @@ class RainScreensaver(ScreensaverWindow):
             return
         self.setProperty(skin.LOADING_PROPERTY, skin.LOADING_OFF)
         if len(variants) < 2 or self.interval() == FOREVER:
+            # Nothing to change to, but a volumetric variant still has columns
+            # to keep sending on their way, so the tick has to carry on.
+            self.hold(float("inf"))
             return
 
         shown_at = time.monotonic()
@@ -192,13 +224,38 @@ class RainScreensaver(ScreensaverWindow):
         return max(FOREVER, minutes) * 60
 
     def hold(self, seconds):
-        """Wait, returning False if the window closed while we did."""
-        waited = 0
+        """Wait, launching replacement columns, until the time is up."""
+        waited = 0.0
         while self.active and waited < seconds:
-            if monitor.waitForAbort(1):
+            if monitor.waitForAbort(TICK_SECONDS):
                 return False
-            waited += 1
+            waited += TICK_SECONDS
+            self.recycle()
         return self.active
+
+    def recycle(self):
+        """Replace the columns of a volumetric variant that have flown past.
+
+        A looping animation cannot do this: Kodi restarts a loop by rewinding
+        the same control, so every column would sweep out and snap back at
+        once. Each one is given a single approach instead and replaced here
+        when it is over, which is also what puts them at different depths.
+        """
+        if not self.strips:
+            return
+        now = time.monotonic()
+        for strip in [flown for flown in self.strips if flown[1] <= now]:
+            self.strips.remove(strip)
+            controls = strip[0]
+            try:
+                self.removeControls(controls)
+            except Exception as exc:
+                logger.debug("Could not remove a column: {}".format(exc))
+                return
+            for control in controls:
+                if control in self.columns:
+                    self.columns.remove(control)
+            self.launch_strip()
 
     def prepare(self, variant):
         """Build a variant's textures, returning False if that is impossible."""
@@ -226,8 +283,10 @@ class RainScreensaver(ScreensaverWindow):
 
         # Whatever is on screen goes behind the cover first. The very first
         # variant has nothing to hide, and simply fades up out of the black.
-        if self.cover is not None and not self.fade(CLEAR, OPAQUE):
-            return False
+        if self.cover is not None:
+            self.refresh_cover()
+            if not self.fade(CLEAR, OPAQUE):
+                return False
 
         # Everything goes, cover included, so the new cover can be added last
         # and end up on top. The window's own backdrop is black as well, so
@@ -270,6 +329,8 @@ class RainScreensaver(ScreensaverWindow):
             logger.debug("Could not remove the previous columns: {}".format(exc))
         self.columns = []
         self.cover = None
+        self.strips = []
+        self.flight = None
 
     def report_progress(self, done, total):
         """Show how far the one-off texture generation has come."""
@@ -299,22 +360,42 @@ class RainScreensaver(ScreensaverWindow):
         return 1000.0 * shape.rows / glyphs_per_second
 
     def add_columns(self, variant, stencils, lights):
-        """Fill the window with columns and return how many there are."""
+        """Fill the window with a variant and return how many columns it has."""
         width = self.getWidth() or FALLBACK_WIDTH
         height = self.getHeight() or FALLBACK_HEIGHT
         shape = rain.geometry(variant)
 
+        # How far the light travels before its pattern lines up again, and how
+        # long that takes at the speed the variant sets.
+        travel = int(round(height * shape.period_rows / float(shape.rows)))
+        loop = self.fall_time(variant, shape) * self.speed_factor() \
+            * shape.period_rows / shape.rows
+
+        if variant.volumetric:
+            controls, animations, count = self.flying_columns(
+                variant, shape, stencils, lights, width, height, travel, loop)
+        else:
+            controls, animations, count = self.tiled_columns(
+                variant, shape, stencils, lights, width, height, travel, loop)
+
+        # Added last, so it covers the columns rather than sitting behind them
+        self.cover = self.new_cover(width, height, OPAQUE)
+        controls.append(self.cover)
+
+        self.addControls(controls)
+        self.columns = controls
+        for control, animation in animations:
+            control.setAnimations(animation)
+        return count
+
+    def tiled_columns(self, variant, shape, stencils, lights,
+                      width, height, travel, loop):
+        """Columns side by side across the screen, the way the rain normally is."""
         # The rain always shows the same number of glyphs from top to bottom,
         # so the columns follow from the aspect ratio: as many as fit next to
         # each other while keeping the shape of a cell.
         count = max(1, int(round(width * shape.rows
                                  * variant.glyph_height_to_width / float(height))))
-
-        # How far the light travels before its pattern lines up again, and how
-        # tall it has to be to cover the screen at both ends of that travel.
-        travel = int(round(height * shape.period_rows / float(shape.rows)))
-        loop = self.fall_time(variant, shape) * self.speed_factor() \
-            * shape.period_rows / shape.rows
 
         controls, animations = [], []
         for index in range(count):
@@ -339,20 +420,131 @@ class RainScreensaver(ScreensaverWindow):
             # Every column falls at a speed of its own, between half and full,
             # the way the shader picks it.
             _, speed = column_offsets(texture)
-            animations.append((light, int(loop / speed)))
+            animations.append((light, [("conditional", _SLIDE.format(
+                distance=travel, duration=int(loop / speed)))]))
+        return controls, animations, count
 
-        # Added last, so it covers the columns rather than sitting behind them
-        self.cover = xbmcgui.ControlImage(
+    # -- Columns flying past ----------------------------------------------
+
+    def flying_columns(self, variant, shape, stencils, lights,
+                       width, height, travel, loop):
+        """Columns coming at the viewer out of the middle of the screen.
+
+        There is no grid here. Each column is put where it would be at a
+        reference depth and then grown about the centre of the screen, which
+        carries it outwards and past the edge exactly as approaching it would.
+        """
+        self.flight = {
+            "stencils": stencils, "lights": lights, "width": width,
+            "height": height, "travel": travel, "loop": loop,
+            "cell": max(2, int(round(height * variant.glyph_height_to_width
+                                     / float(shape.rows)))),
+        }
+
+        controls, animations = [], []
+        for index in range(FLYING_COLUMNS):
+            # Every column starts part-way along a trip of its own, so the
+            # first frame already shows them at every depth rather than one
+            # burst of them leaving the middle together. Kodi has no way to
+            # offset an animation in time -- a delay is served again on every
+            # loop -- so the offset is in where the trip begins.
+            strip, strip_animations, expires = self.build_strip(
+                (index + 0.5) / FLYING_COLUMNS)
+            controls.extend(strip)
+            animations.extend(strip_animations)
+            self.strips.append((strip, expires))
+        return controls, animations, FLYING_COLUMNS
+
+    def build_strip(self, phase=0.0):
+        """One column on its way past, ready to be added to the window."""
+        flight = self.flight
+        width, height = flight["width"], flight["height"]
+        cell, travel = flight["cell"], flight["travel"]
+
+        # Where the column stands at the reference depth. Nothing sits near
+        # the axis: a column too close to it would still be on screen when it
+        # has grown as far as it may, and would have to vanish in plain sight.
+        nearest = width / (2.0 * MAX_SCALE) + cell / 2.0
+        offset = random.choice((-1, 1)) * random.uniform(nearest, width / 2.0)
+        rise = random.uniform(-height / 5.0, height / 5.0)
+        # Grown this far, its inner edge has passed the edge of the screen
+        reach = 1.1 * (width / 2.0) / max(1.0, abs(offset) - cell / 2.0)
+
+        far = FAR_SCALE / 100.0
+        # Starting part-way along shortens the trip to match, and the share
+        # follows the same eased curve the approach itself does.
+        start = far + (reach - far) * (1.0 - math.cos(phase * math.pi / 2))
+        # A column further off the axis is past the viewer sooner
+        duration = max(1000, int(random.uniform(MIN_APPROACH, MAX_APPROACH)
+                                 * (0.4 + 0.6 * reach / MAX_SCALE) * (1.0 - phase)))
+
+        left = int(round(width / 2.0 + offset - cell / 2.0))
+        top = int(round(rise))
+        texture = random.randrange(rain.COLUMN_COUNT)
+        approach = [
+            ("conditional", _ZOOM.format(start=start * 100, end=reach * 100,
+                                         x=width // 2, y=height // 2,
+                                         duration=duration)),
+            ("conditional", _APPROACH_FADE.format(duration=max(1, duration // 2))),
+        ]
+
+        light = xbmcgui.ControlImage(
+            left, top - travel, cell, height + travel,
+            flight["lights"][texture], aspectRatio=0)
+        stencil = xbmcgui.ControlImage(
+            left, top, cell, height, flight["stencils"][texture], aspectRatio=0)
+
+        _, speed = column_offsets(texture)
+        animations = [
+            (light, approach + [("conditional", _SLIDE.format(
+                distance=travel, duration=int(flight["loop"] / speed)))]),
+            (stencil, approach),
+        ]
+        return [light, stencil], animations, time.monotonic() + duration / 1000.0
+
+    def launch_strip(self):
+        """Send one more column on its way out of the vanishing point."""
+        strip, animations, expires = self.build_strip()
+        try:
+            self.addControls(strip)
+        except Exception as exc:
+            logger.debug("Could not add a column: {}".format(exc))
+            return
+        for control, animation in animations:
+            control.setAnimations(animation)
+        self.columns.extend(strip)
+        self.strips.append((strip, expires))
+
+    # -- The cover ---------------------------------------------------------
+
+    def new_cover(self, width, height, alpha):
+        """A black sheet the size of the screen, at the given alpha."""
+        return xbmcgui.ControlImage(
             0, 0, width, height, skin.BLACK_TEXTURE, aspectRatio=0,
-            colorDiffuse="{:02X}000000".format(OPAQUE))
-        controls.append(self.cover)
+            colorDiffuse="{:02X}000000".format(alpha))
 
-        self.addControls(controls)
-        self.columns = controls
-        for control, duration in animations:
-            control.setAnimations([("conditional", _SLIDE.format(
-                distance=travel, duration=duration))])
-        return count
+    def refresh_cover(self):
+        """Put a new cover on top of everything added since the last one.
+
+        Controls draw in the order they were added, so a volumetric variant,
+        which keeps adding columns while it runs, would end up drawing them
+        over the cover. The replacement is invisible while it happens.
+        """
+        width = self.getWidth() or FALLBACK_WIDTH
+        height = self.getHeight() or FALLBACK_HEIGHT
+        previous = self.cover
+        cover = self.new_cover(width, height, CLEAR)
+        try:
+            self.addControl(cover)
+            if previous is not None:
+                self.removeControl(previous)
+        except Exception as exc:
+            logger.debug("Could not renew the cover: {}".format(exc))
+            return
+        if previous in self.columns:
+            self.columns.remove(previous)
+        self.columns.append(cover)
+        self.cover = cover
 
 
 def show_screensaver():
