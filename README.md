@@ -52,7 +52,7 @@ For development you can also drop the folder straight into your Kodi
 
 | Setting | Description |
 | --- | --- |
-| Minutes per variant | How long one variant stays up before the next is picked, 1 to 60 |
+| Minutes per variant | How long one variant stays up before the next is picked, 1 to 60. Zero, at the left end of the slider, keeps the one it started with |
 | Speed of the code rain | Scales the pace every variant sets for itself |
 
 ### DPMS
@@ -69,6 +69,15 @@ One toggle per variant. The screensaver picks at random from the ones left
 switched on, so switching all but one off pins it to that variant. With none
 switched on it falls back to Classic. Debug is off to begin with -- it is a
 tool, not a scene.
+
+Picking one at random every time is the obvious approach and the wrong one: it
+lands on the variant already showing far too often -- with four enabled, every
+fourth pick, sometimes three or four times over -- while another stays away for
+ages. The addon draws from a shuffled pass instead, so every variant gets its
+turn before any of them comes round again. The one place a repeat could still
+slip through is where two passes meet, so a pass that would open on the variant
+just shown swaps it for another, and the variant last seen is remembered across
+screensaver runs so a restart cannot repeat it either.
 
 ## The variants
 
@@ -238,7 +247,7 @@ filtering `kodi.log` for that string shows the whole story:
 | Screensaver never starts | Another player is active, or `is_locked` is stuck -- restart Kodi, the service clears it |
 | A long pause before the first frame | The textures of that variant are being generated; it happens once per variant and the loading screen shows the progress |
 | *"The code rain could not be generated"* | The profile folder is not writable |
-| Always the same variant | Only one is switched on, or all of them are off and it fell back to Classic |
+| Always the same variant | Minutes per variant is 0, only one variant is switched on, or all of them are off and it fell back to Classic |
 | One variant looks far darker than the rest | Nightmare, which relies on the thunder effect that is not ported |
 
 ## Screenshots

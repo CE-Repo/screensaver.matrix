@@ -18,8 +18,10 @@
                 <setting id="rain-interval" type="integer" label="32093" help="32094">
                     <level>0</level>
                     <default>5</default>
+                    <!-- Zero is the left end of the slider and means the
+                         variant never changes. -->
                     <constraints>
-                        <minimum>1</minimum>
+                        <minimum>0</minimum>
                         <step>1</step>
                         <maximum>60</maximum>
                     </constraints>
@@ -128,6 +130,19 @@
                      window is up so the screensaver hook shows the transparent
                      placeholder instead of starting over. The dependency below
                      is never true, which keeps it hidden. -->
+                <setting id="last-variant" type="string" label="32000" help="">
+                    <level>0</level>
+                    <default />
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition on="property" name="InfoBool">false</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="edit" format="string" />
+                </setting>
                 <setting id="is_locked" type="boolean" label="32000" help="">
                     <level>0</level>
                     <default>false</default>

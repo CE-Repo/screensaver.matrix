@@ -201,11 +201,11 @@ msgid "Variants"
 msgstr ""
 
 msgctxt "#32093"
-msgid "Minutes per variant"
+msgid "Minutes per variant (0 = never change)"
 msgstr ""
 
 msgctxt "#32094"
-msgid "How long one variant stays on screen before the next one is picked at random."
+msgid "How long one variant stays on screen before the next one is picked at random. Zero keeps the one it started with."
 msgstr ""
 
 msgctxt "#32095"

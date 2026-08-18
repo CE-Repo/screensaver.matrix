@@ -46,6 +46,24 @@ def get_int(setting_id, default=0):
         return default
 
 
+def get_string(setting_id, default=""):
+    """Read a string setting, falling back to *default* if it is unknown."""
+    try:
+        return ADDON.getSetting(setting_id) or default
+    except Exception as exc:
+        logger.debug("Setting '{}' is not readable ({}), using '{}'".format(
+            setting_id, exc, default))
+        return default
+
+
+def set_string(setting_id, value):
+    """Write a string setting, logging instead of raising when it fails."""
+    try:
+        ADDON.setSetting(setting_id, value)
+    except Exception as exc:
+        logger.error("Could not write setting '{}': {}".format(setting_id, exc))
+
+
 def set_bool(setting_id, value):
     """Write a boolean setting, logging instead of raising when it fails."""
     try:

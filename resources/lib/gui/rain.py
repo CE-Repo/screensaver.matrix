@@ -23,7 +23,8 @@ import time
 import xbmcgui
 
 from core import logger
-from core.addon import get_bool, get_int, profile_folder, set_bool, translate
+from core.addon import (get_bool, get_int, get_string, profile_folder, set_bool,
+                        set_string, translate)
 from gui import skin
 from gui.base import ScreensaverWindow, monitor
 from render import rain, version
@@ -36,8 +37,15 @@ TEXTURE_FOLDER = "rain"
 SPEED_FACTORS = (1.75, 1.0, 0.7, 0.5)
 NORMAL_SPEED = 1
 
-#: Minutes a variant stays up before the next one takes over
+#: Minutes a variant stays up before the next one takes over. Zero means it
+#: stays for as long as the screensaver is up.
 DEFAULT_INTERVAL = 5
+FOREVER = 0
+
+#: Remembers across runs which variant was shown last. A screensaver starts
+#: over every time the user touches something, and without this the same
+#: variant could come up again straight away.
+LAST_VARIANT = "last-variant"
 
 #: Used when Kodi does not report a window size
 FALLBACK_WIDTH, FALLBACK_HEIGHT = 1920, 1080
@@ -116,12 +124,12 @@ class RainScreensaver(ScreensaverWindow):
     def run_scene(self):
         """Show one variant after another for as long as the window is up."""
         variants = enabled_versions()
-        upcoming = self.in_random_order()
+        upcoming = self.in_random_order(get_string(LAST_VARIANT))
 
         if not self.show_variant(next(upcoming), self.report_progress):
             return
         self.setProperty(skin.LOADING_PROPERTY, skin.LOADING_OFF)
-        if len(variants) < 2:
+        if len(variants) < 2 or self.interval() == FOREVER:
             return
 
         shown_at = time.monotonic()
@@ -138,21 +146,33 @@ class RainScreensaver(ScreensaverWindow):
             shown_at = time.monotonic()
 
     @staticmethod
-    def in_random_order():
+    def in_random_order(previous=None):
         """Yield the enabled variants, reshuffled after every pass.
 
-        Drawing at random on its own would repeat variants and skip others for
-        a long while; a shuffled pass keeps it varied without either.
+        Drawing one at random every time is the obvious thing to do and the
+        wrong one: with four variants it lands on the one already showing
+        every fourth pick, sometimes three or four times over, while another
+        stays away for ages. A shuffled pass gives every variant its turn
+        before any repeats.
+
+        That leaves one place a variant could still run twice -- where two
+        passes meet -- so a pass that would open on the one just shown swaps
+        it with another. *previous* carries that across screensaver runs.
         """
         while True:
             order = enabled_versions()
             random.shuffle(order)
+            if len(order) > 1 and order[0].name == previous:
+                other = random.randrange(1, len(order))
+                order[0], order[other] = order[other], order[0]
             for variant in order:
+                previous = variant.name
                 yield variant
 
     def interval(self):
-        """Seconds a variant stays up."""
-        return max(1, get_int("rain-interval", default=DEFAULT_INTERVAL)) * 60
+        """Seconds a variant stays up, ``FOREVER`` when it should not change."""
+        minutes = get_int("rain-interval", default=DEFAULT_INTERVAL)
+        return max(FOREVER, minutes) * 60
 
     def hold(self, seconds):
         """Wait, returning False if the window closed while we did."""
@@ -189,6 +209,7 @@ class RainScreensaver(ScreensaverWindow):
 
         self.clear_columns()
         columns = self.add_columns(variant, stencils, lights)
+        set_string(LAST_VARIANT, variant.name)
         logger.info("Code rain: {} in {} columns".format(variant.name, columns))
         return True
 

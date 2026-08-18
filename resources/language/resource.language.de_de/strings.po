@@ -201,12 +201,12 @@ msgid "Variants"
 msgstr "Varianten"
 
 msgctxt "#32093"
-msgid "Minutes per variant"
-msgstr "Minuten pro Variante"
+msgid "Minutes per variant (0 = never change)"
+msgstr "Minuten pro Variante (0 = unendlich)"
 
 msgctxt "#32094"
-msgid "How long one variant stays on screen before the next one is picked at random."
-msgstr "Wie lange eine Variante zu sehen ist, bevor zufällig die nächste gewählt wird."
+msgid "How long one variant stays on screen before the next one is picked at random. Zero keeps the one it started with."
+msgstr "Wie lange eine Variante zu sehen ist, bevor zufällig die nächste gewählt wird. Bei Null bleibt es bei der ersten."
 
 msgctxt "#32095"
 msgid "Include this variant in the rotation."
