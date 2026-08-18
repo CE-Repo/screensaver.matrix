@@ -343,3 +343,27 @@ msgstr "Code-Regen wird erzeugt..."
 msgctxt "#32082"
 msgid "The code rain could not be generated."
 msgstr "Der Code-Regen konnte nicht erzeugt werden."
+
+msgctxt "#32083"
+msgid "Speed of the code rain"
+msgstr "Geschwindigkeit des Code-Regens"
+
+msgctxt "#32084"
+msgid "How fast the columns fall. Normal matches the speed of the rendered videos."
+msgstr "Wie schnell die Spalten fallen. Normal entspricht dem Tempo der gerenderten Videos."
+
+msgctxt "#32085"
+msgid "Slow"
+msgstr "Langsam"
+
+msgctxt "#32086"
+msgid "Normal"
+msgstr "Normal"
+
+msgctxt "#32087"
+msgid "Fast"
+msgstr "Schnell"
+
+msgctxt "#32088"
+msgid "Very fast"
+msgstr "Sehr schnell"

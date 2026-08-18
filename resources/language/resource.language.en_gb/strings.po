@@ -343,3 +343,27 @@ msgstr ""
 msgctxt "#32082"
 msgid "The code rain could not be generated."
 msgstr ""
+
+msgctxt "#32083"
+msgid "Speed of the code rain"
+msgstr ""
+
+msgctxt "#32084"
+msgid "How fast the columns fall. Normal matches the speed of the rendered videos."
+msgstr ""
+
+msgctxt "#32085"
+msgid "Slow"
+msgstr ""
+
+msgctxt "#32086"
+msgid "Normal"
+msgstr ""
+
+msgctxt "#32087"
+msgid "Fast"
+msgstr ""
+
+msgctxt "#32088"
+msgid "Very fast"
+msgstr ""

@@ -51,6 +51,7 @@ For development you can also drop the folder straight into your Kodi
 | Setting | Description |
 | --- | --- |
 | Scene | `Videos` plays the clips, `Live code rain (generated)` draws the rain instead |
+| Speed of the code rain | How fast the columns fall; `Normal` matches the rendered videos |
 | Show start notification | Toast when the screensaver kicks in |
 | Show preview window | Shows a loading screen before playback starts |
 
@@ -132,6 +133,11 @@ skin engine's animations.
 3. `gui/rain.py` puts one image control per column on screen and gives each a
    looping slide animation that travels exactly one screen height, at a speed
    of its own.
+
+Each column falls one screen height every 1.5 to 3 seconds, which is the pace
+Rezmason's renderer sets: its columns advance 100 * `fallSpeed` glyphs per
+second, scaled per column by a random 0.5 to 1.0. The `Speed of the code rain`
+setting scales that range.
 
 From then on the skin engine moves the columns, so the rain runs at the skin's
 frame rate with no per-frame work in Python at all. The grid is 45 glyphs tall,

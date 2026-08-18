@@ -13,7 +13,7 @@ import threading
 import xbmcgui
 
 from core import logger
-from core.addon import profile_folder, translate
+from core.addon import get_int, profile_folder, translate
 from gui import skin
 from gui.base import ScreensaverWindow
 from render import rain
@@ -21,8 +21,15 @@ from render import rain
 #: Folder below the addon's profile the generated textures are cached in
 TEXTURE_FOLDER = "rain"
 
-#: Milliseconds a column takes to fall one screen height
-MIN_FALL_TIME, MAX_FALL_TIME = 4200, 13000
+#: Milliseconds a column takes to fall one screen height, at normal speed.
+#: Taken from Rezmason's renderer: its columns advance 100 * fallSpeed (0.3)
+#: glyphs per second, scaled per column by a random 0.5 to 1.0, which over the
+#: 45 rows of the grid works out as one screen height every 1.5 to 3 seconds.
+MIN_FALL_TIME, MAX_FALL_TIME = 1500, 3000
+
+#: Values of the "rain-speed" setting, as factors on the times above
+SPEED_FACTORS = (1.75, 1.0, 0.7, 0.5)
+NORMAL_SPEED = 1
 
 #: How much single columns may be dimmed, which gives the rain some depth
 MIN_BRIGHTNESS, MAX_BRIGHTNESS = 0.62, 1.0
@@ -87,10 +94,19 @@ class RainScreensaver(ScreensaverWindow):
             # enough to let it finish and populate the cache.
             pass
 
+    def fall_times(self):
+        """The range of milliseconds a column may take to fall, as configured."""
+        choice = get_int("rain-speed", default=NORMAL_SPEED)
+        if not 0 <= choice < len(SPEED_FACTORS):
+            choice = NORMAL_SPEED
+        factor = SPEED_FACTORS[choice]
+        return int(MIN_FALL_TIME * factor), int(MAX_FALL_TIME * factor)
+
     def add_columns(self, textures):
         """Fill the window with animated columns and return how many there are."""
         width = self.getWidth() or FALLBACK_WIDTH
         height = self.getHeight() or FALLBACK_HEIGHT
+        fastest, slowest = self.fall_times()
 
         # The rain always shows the same number of glyphs from top to bottom,
         # so the columns follow from the aspect ratio: as many as fit next to
@@ -119,5 +135,5 @@ class RainScreensaver(ScreensaverWindow):
         for control in controls:
             control.setAnimations([("conditional", _SLIDE.format(
                 distance=height,
-                duration=random.randint(MIN_FALL_TIME, MAX_FALL_TIME)))])
+                duration=random.randint(fastest, slowest)))])
         return count
