@@ -159,11 +159,6 @@
             <!-- One toggle per variant of the rain. The screensaver picks at
                  random from the ones left switched on. -->
             <group id="1" label="32092">
-                <setting id="enable-3d" type="boolean" label="32058" help="32095">
-                    <level>0</level>
-                    <default>true</default>
-                    <control type="toggle" />
-                </setting>
                 <setting id="enable-bugs" type="boolean" label="32061" help="32095">
                     <level>0</level>
                     <default>true</default>

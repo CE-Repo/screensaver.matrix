@@ -68,8 +68,6 @@ DEFAULTS = {
     "debug": False,
     #: Whether the variant is switched on for a fresh install
     "enabled": True,
-    #: Drawn as columns flying past the viewer rather than as a flat grid
-    "volumetric": False,
 }
 
 
@@ -182,14 +180,6 @@ _VERSIONS = (
             (0.92, hsl(0.375, 1.0, 0.6)),
             (1.0, hsl(0.375, 1.0, 1.0)),
         ),
-    ),
-    Version(
-        "3d", 32058,
-        volumetric=True,
-        base_brightness=-0.9,
-        base_contrast=1.5,
-        fall_speed=0.5,
-        raindrop_length=0.3,
     ),
     Version(
         # Drops the perspective and the glint on its glyphs

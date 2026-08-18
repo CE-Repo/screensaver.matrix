@@ -104,10 +104,6 @@ msgctxt "#32039"
 msgid "General"
 msgstr "Allgemein"
 
-msgctxt "#32058"
-msgid "3D"
-msgstr "3D"
-
 msgctxt "#32061"
 msgid "Bugs"
 msgstr "Bugs"

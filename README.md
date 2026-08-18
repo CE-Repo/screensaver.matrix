@@ -2,7 +2,7 @@
 
 Turns your idle Kodi screen into the Matrix. The code rain is drawn by the
 addon itself -- no video files, no downloads, no network -- as a port of
-[Rezmason/matrix](https://github.com/Rezmason/matrix), with fourteen of its
+[Rezmason/matrix](https://github.com/Rezmason/matrix), with thirteen of its
 variants taking turns.
 
 ---
@@ -10,7 +10,7 @@ variants taking turns.
 ## Features
 
 - **The code rain, generated**: nothing is played back, everything is drawn
-- **14 variants** from Rezmason's project, each with its own glyphs, colours,
+- **13 variants** from Rezmason's project, each with its own glyphs, colours,
   density and speed, and each switchable on its own
 - **They take turns**: one is picked at random, held for as long as you like,
   then the next
@@ -83,7 +83,6 @@ screensaver runs so a restart cannot repeat it either.
 
 | Variant | Glyphs | What it looks like | Left out |
 | --- | --- | --- | --- |
-| 3D | matrixcode | Columns rushing past the viewer, out of a vanishing point | glyph churn |
 | Bugs | resurrections | Amber and yellow | perspective, glint |
 | Classic | matrixcode | The green rain of the films | -- |
 | Debug | matrixcode | What the raindrop pass computes: red cursors, brightness across two channels | -- |
@@ -98,12 +97,10 @@ screensaver runs so a restart cannot repeat it either.
 | Trinity | resurrections | Muted green | perspective, glint |
 | Twilight | huberfishD | Blue, pink and gold | -- |
 
-Four of these are drawn in perspective in the original: 3D, Trinity, Morpheus
-and Bugs. 3D is drawn that way here too, as columns flying past -- see below.
-The other three are drawn flat, with everything else they configure intact;
-turning them into flights as well is one flag each in `render/version.py`.
-Nightmare leans on its thunder to light the screen up, so without it the
-variant stays dark; that is what its raw output looks like.
+Trinity, Morpheus and Bugs are drawn in perspective in the original, which a
+stack of flat images cannot do; they are drawn flat here, with everything else
+they configure intact. Nightmare leans on its thunder to light the screen up,
+so without it the variant stays dark; that is what its raw output looks like.
 
 ## How it works
 
@@ -172,38 +169,6 @@ immediate, and it happens behind a black cover that fades over the picture and
 back off it. The skin engine cannot run that fade: its animations react to
 conditions rather than to a moment of our choosing, so the cover is dimmed from
 Python in two dozen steps, eased at both ends.
-
-### Columns that come at you
-
-3D does not tile the screen. It puts 40 columns in the air, each one where it
-would stand at a reference depth, and grows it about the middle of the screen.
-Growing about a point is exactly what approaching one looks like: a column
-swells and, because the point it grows around is the vanishing point, drifts
-outwards until it passes the edge of the screen. The light and the stencil are
-given the same growth, so the glyphs stay put inside a column while it comes at
-you, and the light still falls through them.
-
-Two things about Kodi's animations shape how this is built:
-
-* **A column gets one approach, not a loop.** A looped animation rewinds the
-  same control, so at the end of every cycle all 40 would snap back to the
-  vanishing point together. Each column is given a single trip instead and
-  replaced by a new one when it is over, which `gui/rain.py` does about five
-  times a second while the variant is up.
-* **They start part-way along.** There is no way to offset an animation in
-  time -- a `delay` is served again on every loop, so it is a pause and not an
-  offset -- so a column that should already be halfway there is simply built
-  halfway there, with a trip shortened to match. That is what fills the screen
-  with columns at every depth from the first frame.
-
-A column is furthest from the axis when it is nearest, so how far it grows
-follows from where it stands: far enough that its inner edge has passed the
-edge of the screen, plus a tenth so it is gone before it is taken away. Nothing
-stands near the axis, because a column there would still be on screen when it
-had grown as far as it may. Its texture is stretched over four times its own
-size by then, which is as soft as it looks -- the stencils are drawn at 22
-pixels per glyph, and a texture tall enough to hold 45 of them at four times
-that would not fit the 2048 pixel limit.
 
 ### Where the port stops
 
