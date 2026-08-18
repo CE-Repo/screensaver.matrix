@@ -22,11 +22,12 @@ from render import png
 #: and the full 0 to 1 range spans this many pixels around it.
 PIXEL_RANGE = 4
 
-#: Width of a glyph in the coverage maps this module hands out. It is close to
-#: the size the rain draws its glyphs at, and small enough to keep the column
-#: textures below the 2048 pixel texture limit of older graphics hardware. The
-#: atlas is halved first, which is quick, and resampled to this size afterwards.
-CELL_WIDTH = 22
+#: Width of a glyph in the coverage maps this module hands out. Kept as close
+#: as the 2048 pixel texture limit of older graphics hardware allows to the
+#: atlas's own resolution (64 pixels a cell, halved below), so the rain draws
+#: from detail the source actually has instead of upscaling a small texture on
+#: screens wider than the columns were sized for.
+CELL_WIDTH = 32
 
 #: Steps the edge is resolved into. Each step is one threshold through the
 #: distance field, and the coverage of a pixel is how many of them it passes.
