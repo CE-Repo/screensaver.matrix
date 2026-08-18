@@ -95,12 +95,28 @@ def palette(stops, position):
     return stops[-1][1]
 
 
+def debug_colour(lit, is_cursor):
+    """The debug view: red cursors, and the raw brightness across two channels.
+
+    It shows what the raindrop pass computed rather than what the palette makes
+    of it, so it deliberately ignores contrast, brightness and palette.
+    """
+    if is_cursor:
+        return (255, 0, 0)
+    return (0,
+            max(0, min(255, int(round(255 * (1.0 - (1.0 - lit) * 3))))),
+            max(0, min(255, int(round(255 * (1.0 - (1.0 - lit) * 8))))))
+
+
 def colour(lit, is_cursor, version):
     """The colour of a glyph that is *lit* this much, cursor or not.
 
     A version with stripes has no palette of its own: its light is drawn white
     and tinted per column afterwards, which is how the stripe pass works.
     """
+    if version.debug:
+        return debug_colour(lit, is_cursor)
+
     base = lit * version.base_contrast + version.base_brightness
     if (version.brightness_override > 0 and not is_cursor
             and base > version.brightness_threshold):

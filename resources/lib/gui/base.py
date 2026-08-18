@@ -1,8 +1,8 @@
-"""What the video window and the live rain window have in common.
+"""What the screensaver windows have in common.
 
-Both fill the screen until the user presses something, and both have to hand
-the display over to the power management once the configured timeout expires.
-Only what is played differs, which the two hooks at the bottom cover.
+A window here fills the screen until the user presses something, and hands the
+display over to the power management once the configured timeout expires. What
+is on it is up to the window, which the two hooks at the bottom cover.
 """
 
 import json

@@ -12,6 +12,6 @@ if _LIB_PATH not in sys.path:
 from core.addon import set_bool
 
 if __name__ == "__main__":
-    # "is_locked" survives a crash during playback and would then make every
-    # screensaver activation show the empty placeholder instead of a video.
+    # "is_locked" survives a crash and would then make every screensaver
+    # activation show the empty placeholder instead of the rain.
     set_bool("is_locked", False)

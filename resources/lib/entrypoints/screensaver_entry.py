@@ -1,8 +1,8 @@
 """Screensaver hook (xbmc.ui.screensaver): decides what Kodi gets to see.
 
-A screensaver addon may only draw, not play video, so this entry point never
-starts playback itself -- it hands over to the script entry point, which opens
-the real video window.
+Kodi closes a screensaver window as soon as it deactivates the screensaver, so
+this entry point draws nothing lasting itself -- it hands over to the script
+entry point, which opens the window the rain runs in.
 """
 
 import os
@@ -18,7 +18,7 @@ if _LIB_PATH not in sys.path:
 
 from core.addon import get_bool, notification, translate
 from gui import skin
-from gui.preview import ScreensaverPreview, deactivate_screensaver, start_video_script
+from gui.preview import ScreensaverPreview, deactivate_screensaver, start_rain_script
 from gui.transparent import ScreensaverTrans
 
 
@@ -29,8 +29,8 @@ def main():
         return
 
     if get_bool("is_locked"):
-        # Our own video is already running, so show the transparent placeholder
-        # rather than starting playback a second time.
+        # Our own window is already up, so show the transparent placeholder
+        # rather than starting the rain a second time.
         skin.show_modal(ScreensaverTrans, skin.TRANSPARENT_XML)
         return
 
@@ -41,7 +41,7 @@ def main():
         skin.show_modal(ScreensaverPreview, skin.SCREENSAVER_XML)
     else:
         # Hand over straight away, without drawing the loading screen first.
-        start_video_script()
+        start_rain_script()
         deactivate_screensaver()
 
 

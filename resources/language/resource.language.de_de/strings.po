@@ -16,42 +16,6 @@ msgctxt "#32000"
 msgid "Matrix Screensaver"
 msgstr "Matrix-Bildschirmschoner"
 
-msgctxt "#32001"
-msgid "Getting video list..."
-msgstr "Videoliste erhalten..."
-
-msgctxt "#32002"
-msgid "Offline mode"
-msgstr "Offline-Modus"
-
-msgctxt "#32003"
-msgid "Download folder"
-msgstr "Download-Ordner"
-
-msgctxt "#32004"
-msgid "Download Videos"
-msgstr "Videos herunterladen"
-
-msgctxt "#32005"
-msgid "No videos found"
-msgstr "Es wurden keine Videos gefunden"
-
-msgctxt "#32006"
-msgid "You need to define a download folder."
-msgstr "Es muss ein Download-Ordner festgelegt werden."
-
-msgctxt "#32007"
-msgid "Choose locations to download videos for:"
-msgstr "Wähle einen Ort aus, an dem die Videos heruntergeladen werden sollen:"
-
-msgctxt "#32008"
-msgid "of"
-msgstr "von"
-
-msgctxt "#32009"
-msgid "Time left:"
-msgstr "Verbleibende Zeit:"
-
 msgctxt "#32010"
 msgid "Instantiated. Please wait..."
 msgstr "Instanziiert. Bitte warten..."
@@ -59,10 +23,6 @@ msgstr "Instanziiert. Bitte warten..."
 msgctxt "#32011"
 msgid "Show start notification"
 msgstr "Startbenachrichtigung anzeigen"
-
-msgctxt "#32012"
-msgid "Checking which videos to download..."
-msgstr "Prüfen, welche Videos heruntergeladen werden sollen..."
 
 msgctxt "#32013"
 msgid "Initializing..."
@@ -83,10 +43,6 @@ msgstr "Display ausschalten"
 msgctxt "#32017"
 msgid "Put playing device on standby via a CEC"
 msgstr "Wiedergabegerät über CEC in den Standby-Modus versetzen"
-
-msgctxt "#32018"
-msgid "Videos"
-msgstr "Videos"
 
 msgctxt "#32019"
 msgid "General settings"
@@ -132,129 +88,25 @@ msgctxt "#32029"
 msgid "Show preview window"
 msgstr "Vorschaufenster anzeigen"
 
-msgctxt "#32030"
-msgid "Only use local files"
-msgstr "Nur lokale Dateien nutzen"
-
-msgctxt "#32031"
-msgid "No downloaded videos for offline mode!"
-msgstr "Keine heruntergeladenen Videos!"
-
-msgctxt "#32032"
-msgid "Only local videos that have been downloaded are played, without attempting to connect to the servers. You need to download the videos first!"
-msgstr "Es werden nur lokale Videos abgespielt, die heruntergeladen wurden, ohne dass versucht wird, eine Verbindung zu den Servern herzustellen. Es müssen zuerst Videos heruntergeladen werden!"
-
 msgctxt "#32033"
 msgid "Displays a notification when the screensaver starts"
 msgstr "Zeigt eine Benachrichtigung an, wenn der Bildschirmschoner startet"
 
 msgctxt "#32034"
-msgid "Shows a preview between the videos"
-msgstr "Zeigt eine Vorschau zwischen den Videos"
-
-msgctxt "#32035"
-msgid "Select a folder where the videos will be saved"
-msgstr "Wähle einen Ordner, in dem die Videos gespeichert werden sollen"
-
-msgctxt "#32036"
-msgid "Opens a dialog with a selection of videos that can be downloaded"
-msgstr "Öffnet einen Dialog mit einer Auswahl von Videos, die heruntergeladen werden können"
+msgid "Shows a loading screen before the rain starts"
+msgstr "Zeigt einen Ladebildschirm, bevor der Regen startet"
 
 msgctxt "#32037"
 msgid "Display Power Management Signaling (DPMS)"
 msgstr "Auch als Display-Energiesparmodus bekannt"
 
-msgctxt "#32038"
-msgid "has already been downloaded."
-msgstr "wurde bereits heruntergeladen."
-
 msgctxt "#32039"
 msgid "General"
 msgstr "Allgemein"
 
-msgctxt "#32040"
-msgid "Enable 3D"
-msgstr "3D aktivieren"
-
-msgctxt "#32041"
-msgid "Enable 3D (Alternative)"
-msgstr "3D (Alternative) aktivieren"
-
-msgctxt "#32042"
-msgid "Enable Black & white"
-msgstr "Schwarzweiß aktivieren"
-
-msgctxt "#32043"
-msgid "Enable Bugs"
-msgstr "Bugs aktivieren"
-
-msgctxt "#32044"
-msgid "Enable Classic"
-msgstr "Klassisch aktivieren"
-
-msgctxt "#32045"
-msgid "Enable Classic (with Intro)"
-msgstr "Klassisch (mit Intro) aktivieren"
-
-msgctxt "#32046"
-msgid "Enable Debug"
-msgstr "Debug aktivieren"
-
-msgctxt "#32047"
-msgid "Enable Megacity (Revolutions)"
-msgstr "Megastadt (Revolutions) aktivieren"
-
-msgctxt "#32048"
-msgid "Enable Morpheus"
-msgstr "Morpheus aktivieren"
-
-msgctxt "#32049"
-msgid "Enable Nightmare"
-msgstr "Albtraum aktivieren"
-
-msgctxt "#32050"
-msgid "Enable Operator"
-msgstr "Operator aktivieren"
-
-msgctxt "#32051"
-msgid "Enable Palimpsest"
-msgstr "Palimpsest aktivieren"
-
-msgctxt "#32052"
-msgid "Enable Paradise"
-msgstr "Paradies aktivieren"
-
-msgctxt "#32053"
-msgid "Enable Rainbow"
-msgstr "Regenbogen aktivieren"
-
-msgctxt "#32054"
-msgid "Enable Resurrections"
-msgstr "Wiederauferstehung (Resurrections) aktivieren"
-
-msgctxt "#32055"
-msgid "Enable Trinity"
-msgstr "Trinity aktivieren"
-
-msgctxt "#32056"
-msgid "Enable Twilight"
-msgstr "Dämmerung aktivieren"
-
-msgctxt "#32057"
-msgid "All"
-msgstr "Alle"
-
 msgctxt "#32058"
 msgid "3D"
 msgstr "3D"
-
-msgctxt "#32059"
-msgid "3D (Alternative)"
-msgstr "3D (Alternative)"
-
-msgctxt "#32060"
-msgid "Black & White"
-msgstr "Schwarzweiß"
 
 msgctxt "#32061"
 msgid "Bugs"
@@ -263,10 +115,6 @@ msgstr "Bugs"
 msgctxt "#32062"
 msgid "Classic"
 msgstr "Klassisch"
-
-msgctxt "#32063"
-msgid "Classic (with Intro)"
-msgstr "Klassisch (Intro)"
 
 msgctxt "#32064"
 msgid "Debug"
@@ -312,30 +160,6 @@ msgctxt "#32074"
 msgid "Twilight"
 msgstr "Dämmerung"
 
-msgctxt "#32075"
-msgid "All selected videos have already been downloaded."
-msgstr "Alle ausgewählten Videos wurden bereits heruntergeladen."
-
-msgctxt "#32076"
-msgid "Download failed:"
-msgstr "Download fehlgeschlagen:"
-
-msgctxt "#32077"
-msgid "Scene"
-msgstr "Szene"
-
-msgctxt "#32078"
-msgid "Videos"
-msgstr "Videos"
-
-msgctxt "#32079"
-msgid "Live code rain (generated)"
-msgstr "Live-Code-Regen (generiert)"
-
-msgctxt "#32080"
-msgid "Videos plays the downloaded or streamed clips. Live code rain is drawn by the addon itself and needs no video file, no download and no network."
-msgstr "Videos spielt die heruntergeladenen oder gestreamten Clips ab. Der Live-Code-Regen wird vom Addon selbst gezeichnet und braucht weder Videodatei noch Download noch Netzwerk."
-
 msgctxt "#32081"
 msgid "Generating the code rain..."
 msgstr "Code-Regen wird erzeugt..."
@@ -368,10 +192,22 @@ msgctxt "#32088"
 msgid "Very fast"
 msgstr "Sehr schnell"
 
-msgctxt "#32089"
-msgid "Variant of the code rain"
-msgstr "Variante des Code-Regens"
+msgctxt "#32091"
+msgid "Code rain"
+msgstr "Code-Regen"
 
-msgctxt "#32090"
-msgid "Which version of the rain to draw. The variants are the ones from Rezmason's Matrix project, each with its own glyphs, colours, density and speed."
-msgstr "Welche Version des Regens gezeichnet wird. Die Varianten stammen aus Rezmasons Matrix-Projekt, jede mit eigenen Glyphen, Farben, Dichte und Tempo."
+msgctxt "#32092"
+msgid "Variants"
+msgstr "Varianten"
+
+msgctxt "#32093"
+msgid "Minutes per variant"
+msgstr "Minuten pro Variante"
+
+msgctxt "#32094"
+msgid "How long one variant stays on screen before the next one is picked at random."
+msgstr "Wie lange eine Variante zu sehen ist, bevor zufällig die nächste gewählt wird."
+
+msgctxt "#32095"
+msgid "Include this variant in the rotation."
+msgstr "Diese Variante in den Wechsel einbeziehen."

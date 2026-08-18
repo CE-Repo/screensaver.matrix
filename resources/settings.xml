@@ -3,34 +3,29 @@
     <section id="screensaver.matrix">
         <category id="General" label="32039" help="32039">
             <group id="1" label="32019">
-                <setting id="scene-mode" type="integer" label="32077" help="32080">
+                <setting id="show-notifications" type="boolean" label="32011" help="32033">
                     <level>0</level>
-                    <default>0</default>
-                    <constraints>
-                        <options>
-                            <option label="32078">0</option>
-                            <option label="32079">1</option>
-                        </options>
-                    </constraints>
-                    <control type="spinner" format="string" />
+                    <default>false</default>
+                    <control type="toggle" />
                 </setting>
-                <setting id="rain-version" type="integer" label="32089" help="32090">
+                <setting id="show-previewwindow" type="boolean" label="32029" help="32034">
                     <level>0</level>
-                    <default>0</default>
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+            </group>
+            <group id="2" label="32091">
+                <setting id="rain-interval" type="integer" label="32093" help="32094">
+                    <level>0</level>
+                    <default>5</default>
                     <constraints>
-                        <options>
-                            <option label="32062">0</option>
-                            <option label="32065">1</option>
-                            <option label="32067">2</option>
-                            <option label="32068">3</option>
-                            <option label="32069">4</option>
-                            <option label="32070">5</option>
-                            <option label="32071">6</option>
-                            <option label="32072">7</option>
-                            <option label="32074">8</option>
-                        </options>
+                        <minimum>1</minimum>
+                        <step>1</step>
+                        <maximum>60</maximum>
                     </constraints>
-                    <control type="spinner" format="string" />
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
                 </setting>
                 <setting id="rain-speed" type="integer" label="32083" help="32084">
                     <level>0</level>
@@ -44,42 +39,6 @@
                         </options>
                     </constraints>
                     <control type="spinner" format="string" />
-                </setting>
-                <setting id="show-notifications" type="boolean" label="32011" help="32033">
-                    <level>0</level>
-                    <default>false</default>
-                    <control type="toggle" />
-                </setting>
-                <setting id="show-previewwindow" type="boolean" label="32029" help="32034">
-                    <level>0</level>
-                    <default>false</default>
-                    <control type="toggle" />
-                </setting>
-            </group>
-            <group id="2" label="32002">
-                <setting id="download-folder" type="path" label="32003" help="32035">
-                    <level>0</level>
-                    <default />
-                    <constraints>
-                        <writable>false</writable>
-                        <allowempty>true</allowempty>
-                    </constraints>
-                    <control type="button" format="path">
-                        <heading>32003</heading>
-                    </control>
-                </setting>
-                <setting id="force-offline" type="boolean" label="32030" help="32032">
-                    <level>0</level>
-                    <default>false</default>
-                    <control type="toggle" />
-                </setting>
-                <setting id="run-downloader" type="action" label="32004" help="32036">
-                    <level>0</level>
-                    <data>RunAddon(screensaver.matrix,offline)</data>
-                    <constraints>
-                        <allowempty>true</allowempty>
-                    </constraints>
-                    <control type="button" format="action" />
                 </setting>
             </group>
             <group id="3" label="32014">
@@ -166,9 +125,9 @@
             <group id="4" label="32020" />
             <group id="5" label="32021">
                 <!-- Internal state, not meant for the user: set while our own
-                     video is playing so the screensaver hook shows the
-                     transparent placeholder instead of starting over. The
-                     dependency below is never true, which keeps it hidden. -->
+                     window is up so the screensaver hook shows the transparent
+                     placeholder instead of starting over. The dependency below
+                     is never true, which keeps it hidden. -->
                 <setting id="is_locked" type="boolean" label="32000" help="">
                     <level>0</level>
                     <default>false</default>
@@ -181,89 +140,76 @@
                 </setting>
             </group>
         </category>
-        <category id="Videos" label="32018" help="32018">
-            <group id="1">
-                <setting id="enable-3d" type="boolean" label="32040" help="32018">
+        <category id="Variants" label="32092" help="32092">
+            <!-- One toggle per variant of the rain. The screensaver picks at
+                 random from the ones left switched on. -->
+            <group id="1" label="32092">
+                <setting id="enable-3d" type="boolean" label="32058" help="32095">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="enable-3d-alt" type="boolean" label="32041" help="32018">
+                <setting id="enable-bugs" type="boolean" label="32061" help="32095">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="enable-black-white" type="boolean" label="32042" help="32018">
+                <setting id="enable-classic" type="boolean" label="32062" help="32095">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="enable-bugs" type="boolean" label="32043" help="32018">
+                <setting id="enable-debug" type="boolean" label="32064" help="32095">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="enable-megacity" type="boolean" label="32065" help="32095">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="enable-classic" type="boolean" label="32044" help="32018">
+                <setting id="enable-morpheus" type="boolean" label="32066" help="32095">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="enable-classic-intro" type="boolean" label="32045" help="32018">
+                <setting id="enable-nightmare" type="boolean" label="32067" help="32095">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="enable-debug" type="boolean" label="32046" help="32018">
+                <setting id="enable-operator" type="boolean" label="32068" help="32095">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="enable-megacity" type="boolean" label="32047" help="32018">
+                <setting id="enable-palimpsest" type="boolean" label="32069" help="32095">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="enable-morpheus" type="boolean" label="32048" help="32018">
+                <setting id="enable-paradise" type="boolean" label="32070" help="32095">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="enable-nightmare" type="boolean" label="32049" help="32018">
+                <setting id="enable-rainbow" type="boolean" label="32071" help="32095">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="enable-operator" type="boolean" label="32050" help="32018">
+                <setting id="enable-resurrections" type="boolean" label="32072" help="32095">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="enable-palimpsest" type="boolean" label="32051" help="32018">
+                <setting id="enable-trinity" type="boolean" label="32073" help="32095">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="enable-paradise" type="boolean" label="32052" help="32018">
-                    <level>0</level>
-                    <default>true</default>
-                    <control type="toggle" />
-                </setting>
-                <setting id="enable-rainbow" type="boolean" label="32053" help="32018">
-                    <level>0</level>
-                    <default>true</default>
-                    <control type="toggle" />
-                </setting>
-                <setting id="enable-resurrections" type="boolean" label="32054" help="32018">
-                    <level>0</level>
-                    <default>true</default>
-                    <control type="toggle" />
-                </setting>
-                <setting id="enable-trinity" type="boolean" label="32055" help="32018">
-                    <level>0</level>
-                    <default>true</default>
-                    <control type="toggle" />
-                </setting>
-                <setting id="enable-twilight" type="boolean" label="32056" help="32018">
+                <setting id="enable-twilight" type="boolean" label="32074" help="32095">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />

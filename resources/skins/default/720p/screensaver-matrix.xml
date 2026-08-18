@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <!--
-    Loading screen and video surface. Controls 32500 to 32502 make up the
+    Loading screen. Controls 32500 to 32502 make up the
     loading overlay and disappear once the window property
     "screensaver-matrix-loading" is set to the literal string "false".
-    Control 32503 carries the "no videos" message and stays empty otherwise.
+    Control 32503 carries an error message and stays empty otherwise.
 -->
 <window type="window">
     <controls>
@@ -63,13 +63,6 @@
             <align>left</align>
             <aligny>center</aligny>
             <label></label>
-        </control>
-        <control type="videowindow">
-            <description>Listed last so the video covers the loading screen</description>
-            <posx>0</posx>
-            <posy>0</posy>
-            <width>1280</width>
-            <height>720</height>
         </control>
     </controls>
 </window>

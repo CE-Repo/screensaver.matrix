@@ -26,7 +26,7 @@ def get_bool(setting_id, default=False):
 
     Kodi's behaviour for ids that are not declared in settings.xml differs
     between releases -- some raise, others return the wrong type -- so an
-    unreadable setting falls back to *default* instead of breaking playback.
+    unreadable setting falls back to *default* instead of breaking the scene.
     """
     try:
         return bool(ADDON.getSettingBool(setting_id))
@@ -42,16 +42,6 @@ def get_int(setting_id, default=0):
         return int(ADDON.getSettingInt(setting_id))
     except Exception as exc:
         logger.debug("Setting '{}' is not readable as int ({}), using {}".format(
-            setting_id, exc, default))
-        return default
-
-
-def get_string(setting_id, default=""):
-    """Read a string setting, falling back to *default* if it is unknown."""
-    try:
-        return ADDON.getSetting(setting_id) or default
-    except Exception as exc:
-        logger.debug("Setting '{}' is not readable ({}), using '{}'".format(
             setting_id, exc, default))
         return default
 
@@ -73,26 +63,6 @@ def profile_folder():
     return xbmcvfs.translatePath(ADDON.getAddonInfo("profile"))
 
 
-def download_folder():
-    """The configured download folder as a real filesystem path, or ``""``.
-
-    The setting may hold a ``special://`` path, which ``os.path`` cannot join
-    correctly, so it is translated before anything builds file paths from it.
-    """
-    folder = get_string("download-folder")
-    return xbmcvfs.translatePath(folder) if folder else ""
-
-
 def notification(header, message, display_time=2000, icon=None, sound=True):
     """Show a toast in the corner of the screen."""
     xbmcgui.Dialog().notification(header, message, icon or ADDON_ICON, display_time, sound)
-
-
-def ok_dialog(header, message):
-    """Show a blocking dialog with a single OK button."""
-    xbmcgui.Dialog().ok(header, message)
-
-
-def select_dialog(header, options):
-    """Show a list picker and return the chosen index, or -1 when cancelled."""
-    return xbmcgui.Dialog().select(header, options)

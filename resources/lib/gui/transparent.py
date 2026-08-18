@@ -1,4 +1,4 @@
-"""Empty full-screen window used as a placeholder while a video is running."""
+"""Empty full-screen window used as a placeholder while the rain is running."""
 
 import xbmc
 import xbmcgui
@@ -9,8 +9,8 @@ from core.addon import set_bool
 class ScreensaverTrans(xbmcgui.WindowXMLDialog):
     """Invisible window shown when Kodi activates the screensaver again.
 
-    Our own video is already playing at that point, so instead of restarting it
-    this window just occupies the screen until the user presses something.
+    Our own window is already up at that point, so instead of starting over
+    this one just occupies the screen until the user presses something.
     """
 
     class ExitMonitor(xbmc.Monitor):

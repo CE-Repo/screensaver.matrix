@@ -1,4 +1,4 @@
-"""The live code rain: a scene the addon draws instead of playing a video.
+"""The code rain: the only scene this screensaver draws.
 
 Each column is two image controls stacked on top of each other. The lower one
 is the light -- a bar of colour holding the raindrops -- and it scrolls
@@ -8,17 +8,24 @@ shows through in the shape of glyphs that stay where they are.
 
 That leaves the skin engine to move a single control per column, which is why
 the rain costs nothing per frame in Python.
+
+The variants the user leaves switched on take turns: one is picked at random,
+held for the configured while, and then swapped for the next one. The textures
+of the variant coming up are built while the current one is still on screen, so
+the change itself is immediate.
 """
 
 import os
+import random
 import threading
+import time
 
 import xbmcgui
 
 from core import logger
-from core.addon import get_int, profile_folder, translate
+from core.addon import get_bool, get_int, profile_folder, set_bool, translate
 from gui import skin
-from gui.base import ScreensaverWindow
+from gui.base import ScreensaverWindow, monitor
 from render import rain, version
 from render.raindrop import column_offsets
 
@@ -28,6 +35,9 @@ TEXTURE_FOLDER = "rain"
 #: Values of the "rain-speed" setting, as factors on the version's own speed
 SPEED_FACTORS = (1.75, 1.0, 0.7, 0.5)
 NORMAL_SPEED = 1
+
+#: Minutes a variant stays up before the next one takes over
+DEFAULT_INTERVAL = 5
 
 #: Used when Kodi does not report a window size
 FALLBACK_WIDTH, FALLBACK_HEIGHT = 1920, 1080
@@ -41,6 +51,19 @@ _SLIDE = ("effect=slide start=0,0 end=0,{distance} time={duration} "
 def texture_folder():
     """Where the generated textures are kept between runs."""
     return os.path.join(profile_folder(), TEXTURE_FOLDER)
+
+
+def enabled_versions():
+    """The variants that are switched on, in the order they are listed."""
+    chosen = [variant for variant in version.VERSIONS
+              if get_bool(variant.setting_id, default=variant.enabled)]
+    if not chosen:
+        # Every variant switched off would leave an empty screen, which is
+        # never what the user meant by starting a screensaver.
+        logger.info("No variant is switched on, drawing {} instead".format(
+            version.DEFAULT_VERSION.name))
+        return [version.DEFAULT_VERSION]
+    return chosen
 
 
 def stripe_tint(variant, column, columns):
@@ -65,7 +88,12 @@ def stripe_tint(variant, column, columns):
 
 
 class RainScreensaver(ScreensaverWindow):
-    """Draws falling glyph columns until the user interrupts or DPMS kicks in."""
+    """Draws one variant after another until the user interrupts or DPMS hits."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        #: The controls of the variant currently on screen
+        self.columns = []
 
     def onInit(self):
         # Kodi calls onInit again whenever the window is re-created; the
@@ -79,29 +107,101 @@ class RainScreensaver(ScreensaverWindow):
 
         # Generating the textures takes a moment on the very first run and
         # must not block the window while the loading screen is up.
-        threading.Thread(target=self.build_scene, daemon=True).start()
+        threading.Thread(target=self.run_scene, daemon=True).start()
 
         self.supervise_display_timeout()
 
-    # -- Building the scene ------------------------------------------------
+    # -- Taking turns ------------------------------------------------------
 
-    def build_scene(self):
-        variant = version.by_index(get_int("rain-version", default=0))
-        logger.info("Code rain variant: {}".format(variant.name))
+    def run_scene(self):
+        """Show one variant after another for as long as the window is up."""
+        variants = enabled_versions()
+        upcoming = self.in_random_order()
+
+        if not self.show_variant(next(upcoming), self.report_progress):
+            return
+        self.setProperty(skin.LOADING_PROPERTY, skin.LOADING_OFF)
+        if len(variants) < 2:
+            return
+
+        shown_at = time.monotonic()
+        while self.active:
+            variant = next(upcoming)
+            # Built while the current variant is still on screen, so the
+            # change itself costs nothing. Cached runs return at once.
+            if not self.prepare(variant):
+                return
+            if not self.hold(self.interval() - (time.monotonic() - shown_at)):
+                return
+            if not self.show_variant(variant):
+                return
+            shown_at = time.monotonic()
+
+    @staticmethod
+    def in_random_order():
+        """Yield the enabled variants, reshuffled after every pass.
+
+        Drawing at random on its own would repeat variants and skip others for
+        a long while; a shuffled pass keeps it varied without either.
+        """
+        while True:
+            order = enabled_versions()
+            random.shuffle(order)
+            for variant in order:
+                yield variant
+
+    def interval(self):
+        """Seconds a variant stays up."""
+        return max(1, get_int("rain-interval", default=DEFAULT_INTERVAL)) * 60
+
+    def hold(self, seconds):
+        """Wait, returning False if the window closed while we did."""
+        waited = 0
+        while self.active and waited < seconds:
+            if monitor.waitForAbort(1):
+                return False
+            waited += 1
+        return self.active
+
+    def prepare(self, variant):
+        """Build a variant's textures, returning False if that is impossible."""
+        try:
+            rain.generate(texture_folder(), variant)
+        except OSError as exc:
+            logger.error("Could not generate the rain textures: {}".format(exc))
+            return False
+        return True
+
+    # -- Putting a variant on screen ---------------------------------------
+
+    def show_variant(self, variant, on_progress=None):
+        """Replace whatever is on screen with *variant*."""
         try:
             stencils, lights = rain.generate(
-                texture_folder(), variant, self.report_progress)
+                texture_folder(), variant, on_progress)
         except OSError as exc:
             logger.error("Could not generate the rain textures: {}".format(exc))
             self.show_message(32082)
-            return
+            return False
 
         if not self.active:
-            return
+            return False
 
+        self.clear_columns()
         columns = self.add_columns(variant, stencils, lights)
-        logger.info("Code rain running with {} columns".format(columns))
-        self.setProperty(skin.LOADING_PROPERTY, skin.LOADING_OFF)
+        logger.info("Code rain: {} in {} columns".format(variant.name, columns))
+        return True
+
+    def clear_columns(self):
+        """Take the current variant off the screen."""
+        if not self.columns:
+            return
+        try:
+            self.removeControls(self.columns)
+        except Exception as exc:
+            # The window may be closing; the controls go with it either way.
+            logger.debug("Could not remove the previous columns: {}".format(exc))
+        self.columns = []
 
     def report_progress(self, done, total):
         """Show how far the one-off texture generation has come."""
@@ -174,7 +274,20 @@ class RainScreensaver(ScreensaverWindow):
             animations.append((light, int(loop / speed)))
 
         self.addControls(controls)
+        self.columns = controls
         for control, duration in animations:
             control.setAnimations([("conditional", _SLIDE.format(
                 distance=travel, duration=duration))])
         return count
+
+
+def show_screensaver():
+    """Open the rain window; blocks until the user dismisses the screensaver."""
+    set_bool("is_locked", True)
+    try:
+        skin.show_modal(RainScreensaver, skin.RAIN_XML)
+    except Exception:
+        # A window that never opened would otherwise leave the addon "locked",
+        # and every later activation would show the empty placeholder instead.
+        set_bool("is_locked", False)
+        raise

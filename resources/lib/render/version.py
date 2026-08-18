@@ -1,9 +1,10 @@
 """The versions of the code rain, as Rezmason's project configures them.
 
 Every entry below is one of the variants from ``js/config.js`` in that project,
-with the values it overrides copied across. Only the ones this addon can draw
-are listed: the variants built on perspective, on a curved grid or on a second
-render pass are left out, and what a listed version drops is noted next to it.
+with the values it overrides copied across. What a variant cannot bring along
+is noted next to it: the effects that need perspective, a curved grid, a second
+render pass or per-frame work on single glyphs have no equivalent here, so
+those variants are drawn flat, with everything else they configure intact.
 """
 
 from collections import namedtuple
@@ -62,6 +63,11 @@ DEFAULTS = {
     "palette": GREEN_PALETTE,
     #: Vertical bands of colour that replace the palette, or None
     "stripes": None,
+    #: The debug view, which colours cells by what the raindrop pass computed
+    #: rather than by a palette
+    "debug": False,
+    #: Whether the variant is switched on for a fresh install
+    "enabled": True,
 }
 
 
@@ -73,15 +79,17 @@ class Version(object):
         self.__dict__.update(overrides)
         self.name = name
         self.label_id = label_id
+        #: The toggle in settings.xml that switches this variant on and off
+        self.setting_id = "enable-{}".format(name)
 
     @property
     def atlas(self):
         return FONTS[self.font]
 
 
-#: The variants, in the order the setting offers them. The label ids are the
-#: ones the video scenes of the same name already use.
-VERSIONS = (
+#: The variants. The label ids are the ones this addon already used for the
+#: scenes of the same name.
+_VERSIONS = (
     Version("classic", 32062),
     Version(
         "megacity", 32065,
@@ -174,6 +182,67 @@ VERSIONS = (
         ),
     ),
     Version(
+        # Drops the perspective it is normally drawn in
+        "3d", 32058,
+        base_brightness=-0.9,
+        base_contrast=1.5,
+        fall_speed=0.5,
+        raindrop_length=0.3,
+    ),
+    Version(
+        # Drops the perspective and the glint on its glyphs
+        "trinity", 32073,
+        font="resurrections",
+        glyph_edge_crop=0.1,
+        cursor_colour=hsl(0.292, 1, 0.8),
+        base_brightness=-0.4,
+        base_contrast=1.5,
+        columns=60,
+        raindrop_length=0.3,
+        palette=(
+            (0.0, hsl(0.37, 0.6, 0.0)),
+            (1.0, hsl(0.37, 0.6, 0.5)),
+        ),
+    ),
+    Version(
+        # Drops the perspective and the glint on its glyphs
+        "morpheus", 32066,
+        font="resurrections",
+        glyph_edge_crop=0.1,
+        cursor_colour=hsl(0.333, 1, 0.85),
+        base_brightness=-0.3,
+        base_contrast=1.5,
+        columns=60,
+        raindrop_length=0.4,
+        palette=(
+            (0.0, hsl(0.97, 0.6, 0.0)),
+            (1.0, hsl(0.97, 0.6, 0.5)),
+        ),
+    ),
+    Version(
+        # Drops the perspective and the glint on its glyphs
+        "bugs", 32061,
+        font="resurrections",
+        glyph_edge_crop=0.1,
+        cursor_colour=hsl(0.619, 1, 0.65),
+        base_brightness=-0.3,
+        base_contrast=1.5,
+        columns=60,
+        raindrop_length=0.3,
+        palette=(
+            (0.0, hsl(0.12, 0.6, 0.0)),
+            (1.0, hsl(0.14, 0.6, 0.5)),
+        ),
+    ),
+    Version(
+        # The view the project uses to show what its raindrop pass computed:
+        # red for the cursors, and the brightness split across two channels.
+        # Switched off by default -- it is a tool, not a scene.
+        "debug", 32064,
+        debug=True,
+        enabled=False,
+    ),
+    Version(
         "twilight", 32074,
         font="huberfishD",
         cursor_colour=hsl(0.167, 1, 0.8),
@@ -190,13 +259,10 @@ VERSIONS = (
     ),
 )
 
+#: Listed by name, which is the order the settings show them in
+VERSIONS = tuple(sorted(_VERSIONS, key=lambda version: version.name))
+
 VERSIONS_BY_NAME = {version.name: version for version in VERSIONS}
 
-DEFAULT_VERSION = VERSIONS[0]
-
-
-def by_index(index):
-    """The version the "rain-version" setting selects, classic if out of range."""
-    if 0 <= index < len(VERSIONS):
-        return VERSIONS[index]
-    return DEFAULT_VERSION
+#: Shown when the user has switched every variant off
+DEFAULT_VERSION = VERSIONS_BY_NAME["classic"]

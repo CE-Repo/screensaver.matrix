@@ -24,16 +24,9 @@ LOADING_ON = "true"
 LOADING_OFF = "false"
 
 
-def show_modal(window_class, xml_file, configure=None):
-    """Open *window_class* modally and drop the reference once it closes.
-
-    *configure* is called with the window before it opens, which is how the
-    caller hands over anything the window needs -- Kodi builds the instance
-    itself, so its constructor cannot take arguments of ours.
-    """
+def show_modal(window_class, xml_file):
+    """Open *window_class* modally and drop the reference once it closes."""
     window = window_class(xml_file, ADDON_PATH, FOLDER, RESOLUTION)
-    if configure is not None:
-        configure(window)
     try:
         window.doModal()
     finally:
