@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <!--
-    Loading screen and video surface. Controls 32500 to 32502 make up the
-    loading overlay and disappear once the window property
-    "screensaver-matrix-loading" is set to the literal string "false".
-    Control 32503 carries the "no videos" message and stays empty otherwise.
+    Window of the live code rain. It only brings the black backdrop and the
+    loading overlay; the columns themselves are image controls that
+    resources/lib/gui/rain.py adds on top once their textures exist.
+
+    Controls 32500 to 32502 make up the loading overlay and disappear once the
+    window property "screensaver-matrix-loading" is set to the literal string
+    "false". Control 32503 carries the error message and stays empty otherwise.
 -->
 <window type="window">
     <controls>
         <control type="image">
-            <description>Black backdrop behind everything else</description>
+            <description>Black backdrop the rain falls on</description>
             <posx>0</posx>
             <posy>0</posy>
-            <width>1280</width>
-            <height>720</height>
-            <colordiffuse>FF555555</colordiffuse>
+            <width>1920</width>
+            <height>1080</height>
             <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
             <texture>black.jpg</texture>
         </control>
@@ -21,8 +23,8 @@
             <description>Background image</description>
             <posx>0</posx>
             <posy>0</posy>
-            <width>1280</width>
-            <height>720</height>
+            <width>1920</width>
+            <height>1080</height>
             <colordiffuse>FF555555</colordiffuse>
             <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
             <texture>main.jpg</texture>
@@ -31,18 +33,18 @@
         <control type="image" id="32501">
             <description>Busy animation</description>
             <posx>40</posx>
-            <posy>685</posy>
+            <posy>1000</posy>
             <width>30</width>
             <height>30</height>
             <texture>busy.png</texture>
             <aspectratio>keep</aspectratio>
-            <animation effect="rotate" start="0" end="360" center="55,700" time="1200" loop="true" condition="true">conditional</animation>
+            <animation effect="rotate" start="0" end="360" center="55,1015" time="1200" loop="true" condition="true">conditional</animation>
             <visible>!String.IsEqual(Window.Property(screensaver-matrix-loading),"false")</visible>
         </control>
         <control type="label" id="32502">
             <description>Status text next to the busy animation</description>
             <left>90</left>
-            <top>655</top>
+            <top>975</top>
             <width>600</width>
             <height>90</height>
             <font>font11</font>
@@ -53,9 +55,9 @@
             <visible>!String.IsEqual(Window.Property(screensaver-matrix-loading),"false")</visible>
         </control>
         <control type="label" id="32503">
-            <description>Message shown when there is nothing to play</description>
+            <description>Message shown when the rain could not be generated</description>
             <left>40</left>
-            <top>655</top>
+            <top>975</top>
             <width>600</width>
             <height>90</height>
             <font>font11</font>
@@ -63,13 +65,6 @@
             <align>left</align>
             <aligny>center</aligny>
             <label></label>
-        </control>
-        <control type="videowindow">
-            <description>Listed last so the video covers the loading screen</description>
-            <posx>0</posx>
-            <posy>0</posy>
-            <width>1280</width>
-            <height>720</height>
         </control>
     </controls>
 </window>

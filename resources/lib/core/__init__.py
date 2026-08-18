@@ -1,1 +1,1 @@
-"""Addon plumbing: Kodi settings access, logging and the video catalogue."""
+"""Addon plumbing: Kodi settings access and logging."""

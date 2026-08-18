@@ -1,7 +1,11 @@
-"""The window that plays the Matrix videos."""
+"""What the screensaver windows have in common.
+
+A window here fills the screen until the user presses something, and hands the
+display over to the power management once the configured timeout expires. What
+is on it is up to the window, which the two hooks at the bottom cover.
+"""
 
 import json
-import threading
 
 import xbmc
 import xbmcgui
@@ -10,8 +14,6 @@ from core import logger
 from core.addon import get_bool, get_int, set_bool, translate
 from gui import skin
 from gui.transparent import ScreensaverTrans
-from playback.player import MatrixPlayer, is_network_source
-from playback.playlist import MatrixPlaylist
 
 #: Values of the "check-dpms" setting
 DPMS_OFF = 0
@@ -47,72 +49,34 @@ def run_builtin(command):
         logger.error("Built-in '{}' failed: {}".format(command, exc))
 
 
-class Screensaver(xbmcgui.WindowXML):
-    """Plays the shuffled playlist until the user interrupts or DPMS kicks in."""
+class ScreensaverWindow(xbmcgui.WindowXML):
+    """Full-screen window that runs until the user or the display timeout ends it."""
 
     def __init__(self, *args, **kwargs):
         self.active = True
         self.started = False
-        self.player = None
-        self.play_index = 0
-        self.playlist = MatrixPlaylist().build()
         self.kodi_dpms_seconds = kodi_displays_off_seconds()
         logger.debug("Kodi display timeout: {}s".format(self.kodi_dpms_seconds))
 
     # -- Kodi callbacks ---------------------------------------------------
 
-    def onInit(self):
-        # Kodi calls onInit again every time the window is re-created, so guard
-        # against starting a second playback thread on top of the first one.
-        if self.started:
-            return
-        self.started = True
-
-        self.getControl(skin.STATUS_LABEL).setLabel(translate(32001))
-        self.setProperty(skin.LOADING_PROPERTY, skin.LOADING_ON)
-
-        if not self.playlist:
-            self.show_no_videos()
-            return
-
-        streamed = sum(1 for url in self.playlist if is_network_source(url))
-        logger.info("Playlist ready: {} videos, {} streamed, {} local".format(
-            len(self.playlist), streamed, len(self.playlist) - streamed))
-
-        self.setProperty(skin.LOADING_PROPERTY, skin.LOADING_OFF)
-        self.player = MatrixPlayer()
-        threading.Thread(target=self.play_forever, daemon=True).start()
-
-        self.supervise_display_timeout()
-
     def onAction(self, action):
         set_bool("is_locked", False)
         self.stop()
 
-    # -- Playback ---------------------------------------------------------
-
-    def play_forever(self):
-        """Loop over the playlist until the window closes or Kodi shuts down."""
-        self.player.play_video(self.playlist[self.play_index])
-        while self.active:
-            if monitor.waitForAbort(1):
-                break
-            # Nothing playing means the previous video ran out; move on.
-            if self.active and not self.player.isPlaying():
-                self.play_index = (self.play_index + 1) % len(self.playlist)
-                self.player.play_video(self.playlist[self.play_index])
+    # -- Lifetime ---------------------------------------------------------
 
     def stop(self):
-        """Stop playback and close the window."""
+        """End the scene and close the window."""
         self.active = False
-        if self.player:
-            self.player.stop()
+        self.stop_scene()
         self.close()
 
-    def show_no_videos(self):
+    def show_message(self, string_id):
+        """Replace the loading screen with a single line of text."""
         self.setProperty(skin.LOADING_PROPERTY, skin.LOADING_OFF)
         message = self.getControl(skin.MESSAGE_LABEL)
-        message.setLabel(translate(32031))
+        message.setLabel(translate(string_id))
         message.setVisible(True)
 
     # -- Display power management -----------------------------------------
@@ -143,7 +107,7 @@ class Screensaver(xbmcgui.WindowXML):
             self.activate_dpms()
 
     def activate_dpms(self):
-        """Stop or pause the video and put the display to sleep."""
+        """Stop or pause the scene and put the display to sleep."""
         logger.debug("Display timeout reached, activating DPMS")
         self.active = False
 
@@ -152,8 +116,8 @@ class Screensaver(xbmcgui.WindowXML):
         show_placeholder = get_int("dpms-action") != DPMS_ACTION_PAUSE
         if show_placeholder:
             self.stop()
-        elif self.player:
-            self.player.pause()
+        else:
+            self.pause_scene()
 
         turn_display_off = get_bool("toggle-displayoff")
         standby_via_cec = get_bool("toggle-cecoff")
@@ -171,14 +135,10 @@ class Screensaver(xbmcgui.WindowXML):
         if show_placeholder:
             skin.show_modal(ScreensaverTrans, skin.TRANSPARENT_XML)
 
+    # -- Hooks ------------------------------------------------------------
 
-def show_screensaver():
-    """Open the video window; blocks until the user dismisses the screensaver."""
-    set_bool("is_locked", True)
-    try:
-        skin.show_modal(Screensaver, skin.SCREENSAVER_XML)
-    except Exception:
-        # A window that never opened would otherwise leave the addon "locked",
-        # and every later activation would show the empty placeholder instead.
-        set_bool("is_locked", False)
-        raise
+    def stop_scene(self):
+        """Called before the window closes. Nothing to do for a drawn scene."""
+
+    def pause_scene(self):
+        """Called instead of stopping when DPMS is set to pause the scene."""

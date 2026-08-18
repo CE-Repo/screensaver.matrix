@@ -1,7 +1,11 @@
-"""Script entry point (xbmc.python.script): plays the videos or downloads them.
+"""Script entry point (xbmc.python.script): draws the code rain.
 
-Called without arguments by the screensaver hook, and with "offline" by the
-"Download Videos" button in the addon settings.
+A screensaver addon may only draw a window of its own, and Kodi tears that
+window down again as soon as it is dismissed. The rain runs from here instead,
+where it can hold the screen for as long as the user leaves it alone.
+
+Called without arguments by the screensaver hook, and with "prepare" by the
+button in the addon settings that builds every variant's textures up front.
 """
 
 import os
@@ -15,22 +19,22 @@ if _LIB_PATH not in sys.path:
 
 from core import logger
 
-#: Argument settings.xml passes to open the download dialog
-DOWNLOAD_COMMAND = "offline"
+#: Argument settings.xml passes to build the textures ahead of time
+PREPARE_COMMAND = "prepare"
 
 
 def main(argv):
     command = argv[1] if len(argv) > 1 else ""
 
     if not command:
-        from gui.screensaver import show_screensaver
+        from gui.rain import show_screensaver
         show_screensaver()
         return
 
-    if command != DOWNLOAD_COMMAND:
-        logger.warning("Unknown argument '{}', opening the downloader".format(command))
-    from download.picker import download_videos
-    download_videos()
+    if command != PREPARE_COMMAND:
+        logger.warning("Unknown argument '{}', preparing the textures".format(command))
+    from gui.prepare import prepare_textures
+    prepare_textures()
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""Loading screen shown while the video script is starting up."""
+"""Loading screen shown while the rain script is starting up."""
 
 import xbmc
 import xbmcgui
@@ -15,17 +15,18 @@ def deactivate_screensaver():
     xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Input.ContextMenu","id":1}')
 
 
-def start_video_script():
-    """Launch the script entry point, which opens the real video window."""
+def start_rain_script():
+    """Launch the script entry point, which opens the window the rain runs in."""
     xbmc.executebuiltin("RunAddon({})".format(ADDON_ID))
 
 
 class ScreensaverPreview(xbmcgui.WindowXMLDialog):
     """Placeholder drawn by Kodi's screensaver hook.
 
-    A screensaver addon may only draw, not play video, so the actual playback
-    happens in the script entry point. This window shows the loading screen,
-    asks Kodi to deactivate the screensaver and hands over on the way out.
+    Kodi tears this window down again the moment the screensaver deactivates,
+    so the rain itself runs in the script entry point. This window shows the
+    loading screen, asks Kodi to deactivate the screensaver and hands over on
+    the way out.
     """
 
     class ExitMonitor(xbmc.Monitor):
@@ -46,4 +47,4 @@ class ScreensaverPreview(xbmcgui.WindowXMLDialog):
     def exit(self):
         self.clearProperty(skin.LOADING_PROPERTY)
         self.close()
-        start_video_script()
+        start_rain_script()
