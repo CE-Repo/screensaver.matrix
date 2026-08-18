@@ -319,3 +319,27 @@ msgstr ""
 msgctxt "#32076"
 msgid "Download failed:"
 msgstr ""
+
+msgctxt "#32077"
+msgid "Scene"
+msgstr ""
+
+msgctxt "#32078"
+msgid "Videos"
+msgstr ""
+
+msgctxt "#32079"
+msgid "Live code rain (generated)"
+msgstr ""
+
+msgctxt "#32080"
+msgid "Videos plays the downloaded or streamed clips. Live code rain is drawn by the addon itself and needs no video file, no download and no network."
+msgstr ""
+
+msgctxt "#32081"
+msgid "Generating the code rain..."
+msgstr ""
+
+msgctxt "#32082"
+msgid "The code rain could not be generated."
+msgstr ""

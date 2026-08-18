@@ -64,6 +64,15 @@ def set_bool(setting_id, value):
         logger.error("Could not write setting '{}': {}".format(setting_id, exc))
 
 
+def profile_folder():
+    """The addon's own data folder as a real filesystem path.
+
+    Kodi reports it as a ``special://`` path, which ``os.path`` cannot join
+    correctly, so it is translated before anything builds file paths from it.
+    """
+    return xbmcvfs.translatePath(ADDON.getAddonInfo("profile"))
+
+
 def download_folder():
     """The configured download folder as a real filesystem path, or ``""``.
 
