@@ -15,8 +15,10 @@ RAIN_XML = "screensaver-matrix-rain.xml"
 BLACK_TEXTURE = os.path.join(
     ADDON_PATH, "resources", "skins", "default", "media", "black.jpg")
 
-#: Skin folder below resources/skins; the empty resolution lets Kodi pick
-#: between the 1080i and 720p variants itself.
+#: Skin folder below resources/skins. Only the 1080i variant is shipped: Kodi
+#: picks the closest of the resolution folders it finds there and scales the
+#: window's coordinates to whatever the screen actually is, so a second set
+#: would be the same layout twice.
 FOLDER = "default"
 RESOLUTION = ""
 

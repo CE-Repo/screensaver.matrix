@@ -159,7 +159,7 @@ original, while the skin engine only has to move one control per column.
 Every variant brings its own grid, so the shape of both textures is worked out
 from its settings: the classic grid is 45 glyphs tall, which puts 80 columns on
 a 16:9 screen. The window derives the column count from the aspect ratio, so
-the cells keep their shape from 720p up to ultra-wide. Each column falls at a
+the cells keep their shape from a 720p screen up to ultra-wide. Each column falls at a
 speed of its own, between half and full, the way the shader picks it.
 
 Generating a variant's 224 textures takes about a second and only happens once:
@@ -200,7 +200,7 @@ resources/
   settings.xml
   language/                the .po files (en_gb, de_de)
   glyphs/                  the glyph atlases of the code rain, and their licence
-  skins/default/           the window definitions (720p and 1080i)
+  skins/default/           the window definitions (1080i, scaled by Kodi)
   lib/
     entrypoints/
       screensaver_entry.py   xbmc.ui.screensaver -- hands over to the script

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<!--
-    Deliberately empty. Shown while the rain is already up so Kodi has a
-    screensaver window on screen without starting the rain over behind it.
--->
-<window type="window">
-    <controls>
-    </controls>
-</window>
