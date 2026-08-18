@@ -12,7 +12,8 @@ the rain costs nothing per frame in Python.
 The variants the user leaves switched on take turns: one is picked at random,
 held for the configured while, and then swapped for the next one. The textures
 of the variant coming up are built while the current one is still on screen, so
-the change itself is immediate.
+the change itself is immediate, and a black cover is faded over the picture
+while it happens.
 """
 
 import os
@@ -49,6 +50,20 @@ LAST_VARIANT = "last-variant"
 
 #: Used when Kodi does not report a window size
 FALLBACK_WIDTH, FALLBACK_HEIGHT = 1920, 1080
+
+#: How long the picture takes to fade out, and again to fade back in, when the
+#: variant changes -- and in how many steps. The skin engine cannot be asked to
+#: run this for us: its animations react to conditions rather than to a moment
+#: we choose, so the cover is dimmed from here instead. Two dozen steps over
+#: two thirds of a second is smooth and costs two dozen calls.
+FADE_MILLISECONDS = 700
+FADE_STEPS = 24
+
+#: The alpha the cover is drawn at, covering everything and covering nothing.
+#: "Nothing" is one rather than zero on purpose: Kodi skips a diffuse colour
+#: of zero when it builds a control, so a cover left at zero would come back
+#: as plain black if the window were ever rebuilt. One is invisible either way.
+OPAQUE, CLEAR = 255, 1
 
 #: The light slides down by exactly the height its pattern repeats with, so
 #: the loop has no seam.
@@ -100,8 +115,10 @@ class RainScreensaver(ScreensaverWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        #: The controls of the variant currently on screen
+        #: The controls of the variant currently on screen, cover included
         self.columns = []
+        #: The black cover the variant change happens behind
+        self.cover = None
 
     def onInit(self):
         # Kodi calls onInit again whenever the window is re-created; the
@@ -207,10 +224,39 @@ class RainScreensaver(ScreensaverWindow):
         if not self.active:
             return False
 
+        # Whatever is on screen goes behind the cover first. The very first
+        # variant has nothing to hide, and simply fades up out of the black.
+        if self.cover is not None and not self.fade(CLEAR, OPAQUE):
+            return False
+
+        # Everything goes, cover included, so the new cover can be added last
+        # and end up on top. The window's own backdrop is black as well, so
+        # the moment in between looks no different.
         self.clear_columns()
         columns = self.add_columns(variant, stencils, lights)
         set_string(LAST_VARIANT, variant.name)
         logger.info("Code rain: {} in {} columns".format(variant.name, columns))
+        return self.fade(OPAQUE, CLEAR)
+
+    def fade(self, first, last):
+        """Take the cover from one alpha to the other, smoothly."""
+        if self.cover is None:
+            return self.active
+        for step in range(1, FADE_STEPS + 1):
+            share = step / float(FADE_STEPS)
+            # Eased at both ends, so the change does not start or stop abruptly
+            eased = share * share * (3 - 2 * share)
+            try:
+                self.cover.setColorDiffuse(
+                    "{:02X}000000".format(int(round(first + (last - first) * eased))))
+            except Exception as exc:
+                # The window may be closing; there is nothing left to fade.
+                logger.debug("Could not fade the cover: {}".format(exc))
+                return False
+            if monitor.waitForAbort(FADE_MILLISECONDS / 1000.0 / FADE_STEPS):
+                return False
+            if not self.active:
+                return False
         return True
 
     def clear_columns(self):
@@ -223,6 +269,7 @@ class RainScreensaver(ScreensaverWindow):
             # The window may be closing; the controls go with it either way.
             logger.debug("Could not remove the previous columns: {}".format(exc))
         self.columns = []
+        self.cover = None
 
     def report_progress(self, done, total):
         """Show how far the one-off texture generation has come."""
@@ -293,6 +340,12 @@ class RainScreensaver(ScreensaverWindow):
             # the way the shader picks it.
             _, speed = column_offsets(texture)
             animations.append((light, int(loop / speed)))
+
+        # Added last, so it covers the columns rather than sitting behind them
+        self.cover = xbmcgui.ControlImage(
+            0, 0, width, height, skin.BLACK_TEXTURE, aspectRatio=0,
+            colorDiffuse="{:02X}000000".format(OPAQUE))
+        controls.append(self.cover)
 
         self.addControls(controls)
         self.columns = controls

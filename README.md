@@ -167,7 +167,10 @@ they are cached per variant in the addon's profile folder
 (`addon_data/screensaver.matrix/rain/<variant>`) and reused from there, and
 textures left behind by an older version are cleaned out. The variant coming up
 is built while the current one is still on screen, so the change itself is
-immediate.
+immediate, and it happens behind a black cover that fades over the picture and
+back off it. The skin engine cannot run that fade: its animations react to
+conditions rather than to a moment of our choosing, so the cover is dimmed from
+Python in two dozen steps, eased at both ends.
 
 ### Where the port stops
 
