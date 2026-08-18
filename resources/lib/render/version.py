@@ -1,0 +1,202 @@
+"""The versions of the code rain, as Rezmason's project configures them.
+
+Every entry below is one of the variants from ``js/config.js`` in that project,
+with the values it overrides copied across. Only the ones this addon can draw
+are listed: the variants built on perspective, on a curved grid or on a second
+render pass are left out, and what a listed version drops is noted next to it.
+"""
+
+from collections import namedtuple
+
+from render.raindrop import hsl
+
+#: A glyph atlas: the file in resources/glyphs and the grid it is laid out on
+Font = namedtuple("Font", ("file_name", "columns", "rows"))
+
+FONTS = {
+    "matrixcode": Font("matrixcode_msdf.png", 8, 8),
+    "megacity": Font("megacity_msdf.png", 8, 8),
+    "gothic": Font("gothic_msdf.png", 8, 8),
+    "coptic": Font("coptic_msdf.png", 8, 8),
+    "resurrections": Font("resurrections_msdf.png", 13, 12),
+    "huberfishA": Font("huberfish_a_msdf.png", 6, 6),
+    "huberfishD": Font("huberfish_d_msdf.png", 6, 6),
+}
+
+#: The default palette: the greens of the films
+GREEN_PALETTE = (
+    (0.0, hsl(0.3, 0.9, 0.0)),
+    (0.2, hsl(0.3, 0.9, 0.2)),
+    (0.7, hsl(0.3, 0.9, 0.7)),
+    (0.8, hsl(0.3, 0.9, 0.8)),
+)
+
+#: The stripe colours of the rainbow variant, each held over two entries the
+#: way the original builds its stripe texture
+PRIDE_STRIPES = tuple(
+    colour for colour in (
+        (227, 3, 3), (255, 140, 0), (255, 237, 0),
+        (0, 128, 38), (0, 77, 255), (117, 8, 135),
+    ) for _ in range(2)
+)
+
+#: Everything a version may override, with the values from the project's own
+#: defaults block
+DEFAULTS = {
+    "font": "matrixcode",
+    #: Glyphs across a 16:9 screen
+    "columns": 80,
+    "animation_speed": 1.0,
+    "fall_speed": 0.3,
+    "raindrop_length": 0.75,
+    "base_contrast": 1.1,
+    "base_brightness": -0.5,
+    #: Set by versions whose glyphs do not fade but simply switch on
+    "brightness_override": 0.0,
+    "brightness_threshold": 0.0,
+    "isolate_cursor": True,
+    "cursor_colour": hsl(0.242, 1, 0.73),
+    "cursor_intensity": 2.0,
+    "glyph_height_to_width": 1.0,
+    "glyph_edge_crop": 0.0,
+    "palette": GREEN_PALETTE,
+    #: Vertical bands of colour that replace the palette, or None
+    "stripes": None,
+}
+
+
+class Version(object):
+    """One variant of the rain, as a set of drawing parameters."""
+
+    def __init__(self, name, label_id, **overrides):
+        self.__dict__.update(DEFAULTS)
+        self.__dict__.update(overrides)
+        self.name = name
+        self.label_id = label_id
+
+    @property
+    def atlas(self):
+        return FONTS[self.font]
+
+
+#: The variants, in the order the setting offers them. The label ids are the
+#: ones the video scenes of the same name already use.
+VERSIONS = (
+    Version("classic", 32062),
+    Version(
+        "megacity", 32065,
+        font="megacity",
+        animation_speed=0.5,
+        columns=40,
+    ),
+    Version(
+        # Drops the thunder and the slanted grid
+        "nightmare", 32067,
+        font="gothic",
+        isolate_cursor=False,
+        base_brightness=-0.8,
+        fall_speed=1.2,
+        columns=60,
+        raindrop_length=0.5,
+        palette=(
+            (0.0, hsl(0.0, 1.0, 0.0)),
+            (0.2, hsl(0.0, 1.0, 0.2)),
+            (0.4, hsl(0.0, 1.0, 0.4)),
+            (0.7, hsl(0.1, 1.0, 0.7)),
+            (1.0, hsl(0.2, 1.0, 1.0)),
+        ),
+    ),
+    Version(
+        # Drops the ripples
+        "operator", 32068,
+        cursor_colour=hsl(0.375, 1, 0.66),
+        cursor_intensity=3.0,
+        brightness_override=0.22,
+        fall_speed=0.6,
+        glyph_edge_crop=0.15,
+        glyph_height_to_width=1.35,
+        columns=108,
+        raindrop_length=1.5,
+        palette=(
+            (0.0, hsl(0.4, 0.8, 0.0)),
+            (0.5, hsl(0.4, 0.8, 0.5)),
+            (1.0, hsl(0.4, 0.8, 1.0)),
+        ),
+    ),
+    Version(
+        # Drops the slanted grid
+        "palimpsest", 32069,
+        font="huberfishA",
+        isolate_cursor=False,
+        columns=40,
+        raindrop_length=1.2,
+        fall_speed=0.5,
+        palette=(
+            (0.0, hsl(0.15, 0.25, 0.9)),
+            (0.4, hsl(0.6, 0.8, 0.1)),
+        ),
+    ),
+    Version(
+        # Drops the curved grid and the ripples
+        "paradise", 32070,
+        font="coptic",
+        isolate_cursor=False,
+        base_brightness=-1.3,
+        base_contrast=2.0,
+        fall_speed=0.02,
+        columns=40,
+        raindrop_length=0.4,
+        palette=(
+            (0.0, hsl(0.0, 0.0, 0.0)),
+            (0.3, hsl(0.0, 0.8, 0.3)),
+            (0.5, hsl(0.1, 0.8, 0.5)),
+            (0.6, hsl(0.1, 1.0, 0.6)),
+            (0.9, hsl(0.1, 1.0, 0.9)),
+        ),
+    ),
+    Version(
+        # The classic rain, coloured by vertical stripes instead of a palette
+        "rainbow", 32071,
+        stripes=PRIDE_STRIPES,
+    ),
+    Version(
+        "resurrections", 32072,
+        font="resurrections",
+        glyph_edge_crop=0.1,
+        cursor_colour=hsl(0.292, 1, 0.8),
+        base_brightness=-0.7,
+        base_contrast=1.17,
+        columns=70,
+        palette=(
+            (0.0, hsl(0.375, 0.9, 0.0)),
+            (0.92, hsl(0.375, 1.0, 0.6)),
+            (1.0, hsl(0.375, 1.0, 1.0)),
+        ),
+    ),
+    Version(
+        "twilight", 32074,
+        font="huberfishD",
+        cursor_colour=hsl(0.167, 1, 0.8),
+        cursor_intensity=1.5,
+        columns=50,
+        raindrop_length=0.9,
+        fall_speed=0.1,
+        palette=(
+            (0.0, hsl(0.6, 1.0, 0.05)),
+            (0.1, hsl(0.6, 0.8, 0.1)),
+            (0.5, hsl(0.88, 0.8, 0.5)),
+            (0.8, hsl(0.15, 1.0, 0.6)),
+        ),
+    ),
+)
+
+VERSIONS_BY_NAME = {version.name: version for version in VERSIONS}
+
+DEFAULT_VERSION = VERSIONS[0]
+
+
+def by_index(index):
+    """The version the "rain-version" setting selects, classic if out of range."""
+    if 0 <= index < len(VERSIONS):
+        return VERSIONS[index]
+    return DEFAULT_VERSION

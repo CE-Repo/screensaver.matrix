@@ -19,19 +19,13 @@ from core import logger
 from core.addon import get_int, profile_folder, translate
 from gui import skin
 from gui.base import ScreensaverWindow
-from render import rain
+from render import rain, version
 from render.raindrop import column_offsets
 
 #: Folder below the addon's profile the generated textures are cached in
 TEXTURE_FOLDER = "rain"
 
-#: Milliseconds the fastest column takes to fall one screen height, at normal
-#: speed. Rezmason's renderer advances a column 100 * fallSpeed (0.3) glyphs
-#: per second, which over the 45 rows of the grid is one screen every 1.5
-#: seconds; slower columns follow from the per-column speed the shader picks.
-FALL_TIME = 1500
-
-#: Values of the "rain-speed" setting, as factors on the time above
+#: Values of the "rain-speed" setting, as factors on the version's own speed
 SPEED_FACTORS = (1.75, 1.0, 0.7, 0.5)
 NORMAL_SPEED = 1
 
@@ -47,6 +41,27 @@ _SLIDE = ("effect=slide start=0,0 end=0,{distance} time={duration} "
 def texture_folder():
     """Where the generated textures are kept between runs."""
     return os.path.join(profile_folder(), TEXTURE_FOLDER)
+
+
+def stripe_tint(variant, column, columns):
+    """The colour a striped version paints this column in, as a Kodi diffuse.
+
+    A version with stripes draws its light white and is tinted here instead,
+    which keeps the stripes spread across however many columns the screen
+    happens to have. Everything else is left alone.
+    """
+    if not variant.stripes:
+        return ""
+    # The original spreads its stripe colours across the screen and blends
+    # between them, so the position lands between two of them.
+    position = (column + 0.5) / columns * len(variant.stripes) - 0.5
+    position = max(0.0, min(len(variant.stripes) - 1.0, position))
+    low = int(position)
+    high = min(low + 1, len(variant.stripes) - 1)
+    share = position - low
+    return "FF" + "".join(
+        "{:02X}".format(int(round(start + (end - start) * share)))
+        for start, end in zip(variant.stripes[low], variant.stripes[high]))
 
 
 class RainScreensaver(ScreensaverWindow):
@@ -71,8 +86,11 @@ class RainScreensaver(ScreensaverWindow):
     # -- Building the scene ------------------------------------------------
 
     def build_scene(self):
+        variant = version.by_index(get_int("rain-version", default=0))
+        logger.info("Code rain variant: {}".format(variant.name))
         try:
-            stencils, lights = rain.generate(texture_folder(), self.report_progress)
+            stencils, lights = rain.generate(
+                texture_folder(), variant, self.report_progress)
         except OSError as exc:
             logger.error("Could not generate the rain textures: {}".format(exc))
             self.show_message(32082)
@@ -81,7 +99,7 @@ class RainScreensaver(ScreensaverWindow):
         if not self.active:
             return
 
-        columns = self.add_columns(stencils, lights)
+        columns = self.add_columns(variant, stencils, lights)
         logger.info("Code rain running with {} columns".format(columns))
         self.setProperty(skin.LOADING_PROPERTY, skin.LOADING_OFF)
 
@@ -95,27 +113,40 @@ class RainScreensaver(ScreensaverWindow):
             # enough to let it finish and populate the cache.
             pass
 
-    def fall_time(self):
-        """Milliseconds the fastest column takes to fall one screen height."""
+    def speed_factor(self):
+        """How much the speed setting stretches the version's own pace."""
         choice = get_int("rain-speed", default=NORMAL_SPEED)
         if not 0 <= choice < len(SPEED_FACTORS):
             choice = NORMAL_SPEED
-        return FALL_TIME * SPEED_FACTORS[choice]
+        return SPEED_FACTORS[choice]
 
-    def add_columns(self, stencils, lights):
+    @staticmethod
+    def fall_time(variant, shape):
+        """Milliseconds the fastest column takes to fall one screen height.
+
+        The shader advances a column by ``100 * fallSpeed`` glyphs per second,
+        so how long a screen takes follows from how many rows it holds.
+        """
+        glyphs_per_second = 100.0 * variant.fall_speed * variant.animation_speed
+        return 1000.0 * shape.rows / glyphs_per_second
+
+    def add_columns(self, variant, stencils, lights):
         """Fill the window with columns and return how many there are."""
         width = self.getWidth() or FALLBACK_WIDTH
         height = self.getHeight() or FALLBACK_HEIGHT
+        shape = rain.geometry(variant)
 
         # The rain always shows the same number of glyphs from top to bottom,
         # so the columns follow from the aspect ratio: as many as fit next to
-        # each other while staying square.
-        count = max(1, int(round(width * rain.ROWS / float(height))))
+        # each other while keeping the shape of a cell.
+        count = max(1, int(round(width * shape.rows
+                                 * variant.glyph_height_to_width / float(height))))
 
         # How far the light travels before its pattern lines up again, and how
         # tall it has to be to cover the screen at both ends of that travel.
-        travel = int(round(height * rain.PERIOD_ROWS / float(rain.ROWS)))
-        fall_time = self.fall_time()
+        travel = int(round(height * shape.period_rows / float(shape.rows)))
+        loop = self.fall_time(variant, shape) * self.speed_factor() \
+            * shape.period_rows / shape.rows
 
         controls, animations = [], []
         for index in range(count):
@@ -127,7 +158,8 @@ class RainScreensaver(ScreensaverWindow):
 
             light = xbmcgui.ControlImage(
                 left, -travel, column_width, height + travel,
-                lights[texture], aspectRatio=0)
+                lights[texture], aspectRatio=0,
+                colorDiffuse=stripe_tint(variant, index, count))
             stencil = xbmcgui.ControlImage(
                 left, 0, column_width, height,
                 stencils[texture], aspectRatio=0)
@@ -136,21 +168,13 @@ class RainScreensaver(ScreensaverWindow):
             # is only ever visible through the glyphs punched out of it.
             controls.append(light)
             controls.append(stencil)
-            animations.append((light, self.travel_time(fall_time, texture)))
+            # Every column falls at a speed of its own, between half and full,
+            # the way the shader picks it.
+            _, speed = column_offsets(texture)
+            animations.append((light, int(loop / speed)))
 
         self.addControls(controls)
         for control, duration in animations:
             control.setAnimations([("conditional", _SLIDE.format(
                 distance=travel, duration=duration))])
         return count
-
-    @staticmethod
-    def travel_time(fall_time, column):
-        """Milliseconds this column's light needs for one full loop.
-
-        The shader gives every column a speed of its own, between half and
-        full, and the light has to travel several screen heights before its
-        pattern repeats.
-        """
-        _, speed = column_offsets(column)
-        return int(fall_time * rain.PERIOD_ROWS / rain.ROWS / speed)

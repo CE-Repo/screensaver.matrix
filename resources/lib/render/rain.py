@@ -14,38 +14,38 @@ stack two images, and that is enough to do the same thing the other way round:
 The glyphs therefore stay exactly where they are while the light travels
 through them, which is the whole point.
 
+Every version of the rain brings its own grid, its own glyphs and its own
+raindrop length, so the shape of both textures is worked out per version and
+they are cached in a folder of their own.
+
 Nothing in here talks to Kodi, so the textures can be generated and inspected
 outside of it as well.
 """
 
 import os
+from collections import namedtuple
 from random import Random
 
 from render import glyphs, raindrop
 from render.png import write_rgba
 
-#: Glyphs per screen height. 45 rows put 80 columns on a 16:9 screen, the grid
-#: Rezmason's renderer uses by default.
-ROWS = 45
+#: The screen the column counts in the version table are given for
+REFERENCE_ASPECT = 16.0 / 9.0
 
-#: Edge length of one glyph in the stencil textures
-CELL = glyphs.CELL
+#: Screens of travel a light texture should last before it repeats itself
+TARGET_LOOP_SCREENS = 8
 
-#: Height of a stencil: the full screen, one glyph per row
-STENCIL_HEIGHT = ROWS * CELL
+#: Cycles one loop may hold. Fewer than two would make every raindrop in a
+#: column the same length again; more than six buys nothing.
+MIN_CYCLES, MAX_CYCLES = 2, 6
 
-#: Rows the light texture repeats itself with, and how many it holds. The
-#: control it belongs to is one screen taller than the repeat, so that it
-#: covers the screen at both ends of its travel.
-PERIOD_ROWS = raindrop.CYCLE_ROWS * raindrop.CYCLES_PER_LOOP
-LIGHT_ROWS = PERIOD_ROWS + ROWS
+#: What older graphics hardware still accepts as a texture size
+MAX_TEXTURE = 2048
 
 #: Texture pixels per grid row in the light bar. The brightness is constant
-#: within a row, so this only decides how sharp the step between two rows
-#: stays once Kodi has stretched the texture; four keeps the whole texture
-#: below the 2048 pixel limit of older graphics hardware.
-ROW_PIXELS = 4
-LIGHT_HEIGHT = LIGHT_ROWS * ROW_PIXELS
+#: within a row, so this only decides how sharp the step between two rows stays
+#: once Kodi has stretched the texture.
+MIN_ROW_PIXELS, MAX_ROW_PIXELS = 2, 8
 
 #: Two pixels wide rather than one: a single column of pixels is an odd thing
 #: to hand a graphics driver, and the second one costs nothing.
@@ -58,30 +58,78 @@ COLUMN_COUNT = 112
 
 #: Raised whenever the shape of the textures changes, so old files in the
 #: cache folder are not mistaken for current ones.
-CACHE_VERSION = 4
+CACHE_VERSION = 5
 
 #: Fixed seed for the glyph choice: the textures are cached on disk, and a
 #: stable seed means the same addon version always produces the same files.
 _SEED = 0x4D4154
 
-#: "rain-" is the name older versions cached their textures under, and is
-#: listed so those are cleaned out too.
 _PREFIXES = ("stencil-", "light-", "rain-")
 
+#: Everything about a version's textures that follows from its settings
+Geometry = namedtuple("Geometry", (
+    "rows",          # glyphs from the top of the screen to the bottom
+    "cell_width",    # texture pixels per glyph
+    "cell_height",
+    "cycles",        # raindrops one texture loop holds
+    "period_rows",   # rows the light repeats itself with
+    "light_rows",    # rows the light texture holds altogether
+    "row_pixels",    # texture pixels per row of the light
+))
 
-def _stencil_name(index):
-    return "stencil-v{}-{}-{:03d}.png".format(CACHE_VERSION, CELL, index)
+
+def geometry(version):
+    """Work out the shape of one version's textures."""
+    rows = max(4, int(round(
+        version.columns / (REFERENCE_ASPECT * version.glyph_height_to_width))))
+    cell_width = glyphs.CELL_WIDTH
+    cell_height = max(1, int(round(cell_width * version.glyph_height_to_width)))
+
+    cycle = raindrop.cycle_rows(version)
+    # Long raindrops need fewer cycles per loop, or the light would have to
+    # travel dozens of screens -- and be far too tall a texture -- before it
+    # lines up with itself again.
+    wanted = min(MAX_CYCLES, max(MIN_CYCLES,
+                                 int(round(TARGET_LOOP_SCREENS * rows / float(cycle)))))
+    cycles, light_rows, row_pixels = wanted, 0, 0
+    while cycles >= MIN_CYCLES:
+        light_rows = cycle * cycles + rows
+        row_pixels = min(MAX_ROW_PIXELS, MAX_TEXTURE // light_rows)
+        if row_pixels >= MIN_ROW_PIXELS:
+            break
+        cycles -= 1
+    else:
+        # Nothing fits: keep the shortest loop and give up some sharpness.
+        cycles = MIN_CYCLES
+        light_rows = cycle * cycles + rows
+        row_pixels = max(1, MAX_TEXTURE // light_rows)
+
+    return Geometry(rows, cell_width, cell_height,
+                    cycles, cycle * cycles, light_rows, row_pixels)
 
 
-def _light_name(index):
-    return "light-v{}-{}-{:03d}.png".format(CACHE_VERSION, ROW_PIXELS, index)
+def version_folder(folder, version):
+    """Each version caches its textures in a folder of its own."""
+    return os.path.join(folder, version.name)
 
 
-def texture_paths(folder):
-    """Where the stencil and light textures live, existing or not."""
-    stencils = [os.path.join(folder, _stencil_name(index))
+def _stencil_name(index, shape):
+    return "stencil-v{}-{}x{}-{:03d}.png".format(
+        CACHE_VERSION, shape.cell_width, shape.cell_height, index)
+
+
+def _light_name(index, shape):
+    return "light-v{}-{}x{}-{:03d}.png".format(
+        CACHE_VERSION, shape.row_pixels, shape.light_rows, index)
+
+
+def texture_paths(folder, version):
+    """Where one version's stencil and light textures live, existing or not."""
+    shape = geometry(version)
+    inside = version_folder(folder, version)
+    stencils = [os.path.join(inside, _stencil_name(index, shape))
                 for index in range(COLUMN_COUNT)]
-    lights = [os.path.join(folder, _light_name(index))
+    lights = [os.path.join(inside, _light_name(index, shape))
               for index in range(COLUMN_COUNT)]
     return stencils, lights
 
@@ -109,58 +157,66 @@ def _write(path, width, height, scanlines):
 class _Punch:
     """Turns each glyph into the hole it leaves in a stencil, once."""
 
-    #: Black everywhere; only the alpha channel carries the glyph, inverted,
-    #: so a covered pixel is a hole and an empty one stays opaque.
+    #: Only the alpha channel carries the glyph, inverted, so a covered pixel
+    #: is a hole and an empty one stays opaque.
     _INVERT = bytes(255 - value for value in range(256))
 
-    def __init__(self, coverage_maps):
+    def __init__(self, coverage_maps, shape, background):
         self.coverage_maps = coverage_maps
+        self.shape = shape
+        self.background = background
         self.rows = {}
 
     def get(self, glyph):
         rows = self.rows.get(glyph)
         if rows is None:
             coverage = self.coverage_maps[glyph]
-            buffer = bytearray(len(coverage) * 4)
+            pixels = len(coverage)
+            buffer = bytearray(pixels * 4)
+            for channel, value in enumerate(self.background):
+                buffer[channel::4] = bytes((value,)) * pixels
             buffer[3::4] = coverage.translate(self._INVERT)
-            stride = CELL * 4
+            stride = self.shape.cell_width * 4
             rows = [bytes(buffer[line * stride:(line + 1) * stride])
-                    for line in range(CELL)]
+                    for line in range(self.shape.cell_height)]
             self.rows[glyph] = rows
         return rows
 
 
-def _stencil(punch, random, glyph_count):
+def _stencil(punch, random, glyph_count, shape):
     """One column of glyphs, as the scanlines of a stencil texture."""
     scanlines = []
-    for _ in range(ROWS):
+    for _ in range(shape.rows):
         scanlines.extend(punch.get(random.randrange(glyph_count)))
     return scanlines
 
 
-def _light(column):
+def _light(column, version, shape):
     """One column's raindrops, as the scanlines of a light texture.
 
     The rows are generated from the bottom of the grid upwards, the way the
     shader counts them, and written out top to bottom.
     """
-    colours = raindrop.column_colours(LIGHT_ROWS, column, LIGHT_ROWS - 1)
+    colours = raindrop.column_colours(
+        shape.light_rows, column, shape.light_rows - 1, version, shape.cycles)
     scanlines = []
     for red, green, blue in colours:
         band = bytes((red, green, blue, 255)) * LIGHT_WIDTH
-        scanlines.extend([band] * ROW_PIXELS)
+        scanlines.extend([band] * shape.row_pixels)
     return scanlines
 
 
-def generate(folder, on_progress=None):
-    """Write every missing texture into *folder* and return their paths.
+def generate(folder, version, on_progress=None):
+    """Write every missing texture of *version* and return their paths.
 
     *on_progress* is called with the number of textures done and the total,
     so the caller can drive a progress display while this runs.
     """
-    os.makedirs(folder, exist_ok=True)
-    stencils, lights = texture_paths(folder)
-    _drop_stale(folder, stencils + lights)
+    shape = geometry(version)
+    inside = version_folder(folder, version)
+    os.makedirs(inside, exist_ok=True)
+    stencils, lights = texture_paths(folder, version)
+    _drop_stale(inside, stencils + lights)
 
     missing = [path for path in stencils + lights if not os.path.exists(path)]
     if not missing:
@@ -174,18 +230,28 @@ def generate(folder, on_progress=None):
     for index in range(COLUMN_COUNT):
         if stencils[index] in outstanding:
             if punch is None:
-                punch = _Punch(glyphs.load())
+                # The background of a stencil is the colour the palette holds
+                # where nothing is lit, which is black for every version but
+                # the one that draws dark glyphs on a light page.
+                background = raindrop.colour(0.0, False, version)
+                punch = _Punch(glyphs.load(version.atlas, shape.cell_width,
+                                           shape.cell_height,
+                                           version.glyph_edge_crop),
+                               shape, background)
             # Seeded per column, so an interrupted run resumes with the same
             # textures it would have written the first time.
             random = Random(_SEED + index)
-            _write(stencils[index], CELL, STENCIL_HEIGHT,
-                   _stencil(punch, random, len(punch.coverage_maps)))
+            _write(stencils[index], shape.cell_width,
+                   shape.rows * shape.cell_height,
+                   _stencil(punch, random, len(punch.coverage_maps), shape))
             done += 1
             if on_progress:
                 on_progress(done, total)
 
         if lights[index] in outstanding:
-            _write(lights[index], LIGHT_WIDTH, LIGHT_HEIGHT, _light(index))
+            _write(lights[index], LIGHT_WIDTH,
+                   shape.light_rows * shape.row_pixels,
+                   _light(index, version, shape))
             done += 1
             if on_progress:
                 on_progress(done, total)

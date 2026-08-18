@@ -15,32 +15,13 @@ condition that matters -- that the wobble never runs backwards -- still holds.
 
 import math
 
-#: The speed the raindrops progress downwards
-FALL_SPEED = 0.3
-
-#: Adjusts the frequency of raindrops, and with that their length
-RAINDROP_LENGTH = 0.75
-
-#: Rows one raindrop cycle spans, straight out of the shader's arithmetic:
-#: a row advances the wave by 0.01 / RAINDROP_LENGTH, a full cycle is 1.0.
-CYCLE_ROWS = int(round(100 * RAINDROP_LENGTH))
-
-#: Cycles per texture loop, and the wobble's two harmonics within that loop.
-#: The original uses sqrt(2) and sqrt(5) radians per cycle; over five cycles
-#: those come out closest to one and two whole waves.
-CYCLES_PER_LOOP = 5
+#: The wobble's two harmonics per texture loop, and their amplitudes. The
+#: original runs them at sqrt(2) and sqrt(5) radians per cycle; over five
+#: cycles those come out closest to one and two whole waves. Shorter loops
+#: scale the amplitudes down with them, which keeps the wobble from ever
+#: running backwards -- it never does in the original either.
 WOBBLE_HARMONICS = ((1, 0.3), (2, 0.2))
-
-#: Contrast and brightness applied before the palette is looked up. Note that
-#: the brightness is negative: a glyph only becomes visible once the raindrop
-#: has passed 0.45, which is what cuts the wave into separate drops.
-BASE_CONTRAST = 1.1
-BASE_BRIGHTNESS = -0.5
-
-#: The cursor is the brightest glyph at the bottom of a raindrop. It is not
-#: taken from the palette but added on top of it, which is why it can be
-#: brighter than any colour the palette holds.
-CURSOR_INTENSITY = 2
+WOBBLE_REFERENCE_CYCLES = 5
 
 
 def hsl(hue, saturation, lightness):
@@ -56,17 +37,6 @@ def hsl(hue, saturation, lightness):
     }[int(sector) % 6]
     return tuple(max(0, min(255, int(round((value + lowest) * 255))))
                  for value in channels)
-
-
-#: The palette the raindrop brightness is mapped onto, as (position, colour)
-PALETTE = (
-    (0.0, hsl(0.3, 0.9, 0.0)),
-    (0.2, hsl(0.3, 0.9, 0.2)),
-    (0.7, hsl(0.3, 0.9, 0.7)),
-    (0.8, hsl(0.3, 0.9, 0.8)),
-)
-
-CURSOR_COLOUR = hsl(0.242, 1, 0.73)
 
 
 def _fract(value):
@@ -88,52 +58,79 @@ def column_offsets(column):
     return time_offset, speed_offset
 
 
-def wobble(position):
+def cycle_rows(version):
+    """Rows one raindrop cycle spans.
+
+    Straight out of the shader's arithmetic: a row advances the wave by
+    ``0.01 / raindropLength``, and a full cycle is 1.0.
+    """
+    return int(round(100 * version.raindrop_length))
+
+
+def wobble(position, cycles):
     """Stretches and squeezes the wave, so no two raindrops are the same length."""
+    scale = min(1.0, float(cycles) / WOBBLE_REFERENCE_CYCLES)
     total = position
     for harmonic, amplitude in WOBBLE_HARMONICS:
-        total += amplitude * math.sin(
-            2 * math.pi * harmonic * position / CYCLES_PER_LOOP)
+        total += amplitude * scale * math.sin(
+            2 * math.pi * harmonic * position / cycles)
     return total
 
 
-def brightness(row, column_time):
+def brightness(row, column_time, version, cycles):
     """How lit the glyph in *row* is, 0 to 1. Row 0 is the bottom of the grid."""
-    return 1.0 - _fract(wobble((row * 0.01 + column_time) / RAINDROP_LENGTH))
+    position = (row * 0.01 + column_time) / version.raindrop_length
+    return 1.0 - _fract(wobble(position, cycles))
 
 
-def palette(position):
-    """The colour the palette holds at *position*, interpolated between stops."""
-    if position <= PALETTE[0][0]:
-        return PALETTE[0][1]
-    for (low, low_colour), (high, high_colour) in zip(PALETTE, PALETTE[1:]):
+def palette(stops, position):
+    """The colour *stops* hold at *position*, interpolated between them."""
+    if position <= stops[0][0]:
+        return stops[0][1]
+    for (low, low_colour), (high, high_colour) in zip(stops, stops[1:]):
         if position <= high:
             share = (position - low) / (high - low)
             return tuple(int(round(start + (end - start) * share))
                          for start, end in zip(low_colour, high_colour))
-    return PALETTE[-1][1]
+    return stops[-1][1]
 
 
-def colour(lit, is_cursor):
-    """The colour of a glyph that is *lit* this much, cursor or not."""
-    base = min(1.0, max(0.0, lit * BASE_CONTRAST + BASE_BRIGHTNESS))
+def colour(lit, is_cursor, version):
+    """The colour of a glyph that is *lit* this much, cursor or not.
+
+    A version with stripes has no palette of its own: its light is drawn white
+    and tinted per column afterwards, which is how the stripe pass works.
+    """
+    base = lit * version.base_contrast + version.base_brightness
+    if (version.brightness_override > 0 and not is_cursor
+            and base > version.brightness_threshold):
+        # Versions that do not fade their glyphs pin them to one brightness
+        base = version.brightness_override
+    base = min(1.0, max(0.0, base))
+
     if is_cursor:
         # The palette contributes nothing to a cursor; its colour is added on
         # top of it instead, and clipped per channel.
-        return tuple(min(255, int(round(channel * CURSOR_INTENSITY * base)))
-                     for channel in CURSOR_COLOUR)
-    return palette(base)
+        tint = (255, 255, 255) if version.stripes else version.cursor_colour
+        return tuple(min(255, int(round(channel * version.cursor_intensity * base)))
+                     for channel in tint)
+    if version.stripes:
+        value = int(round(255 * base))
+        return (value, value, value)
+    return palette(version.palette, base)
 
 
-def column_colours(rows, column, top_row):
+def column_colours(rows, column, top_row, version, cycles):
     """The colours of one column, from *top_row* downwards, cursors included.
 
     Returns one ``(red, green, blue)`` per row, top to bottom, ready to be
     written into a light texture.
     """
     time_offset, _ = column_offsets(column)
-    lit = [brightness(top_row - offset, time_offset) for offset in range(rows + 1)]
+    lit = [brightness(top_row - offset, time_offset, version, cycles)
+           for offset in range(rows + 1)]
     # A glyph is the cursor when the one below it is darker: that is the
     # bottom end of a raindrop, where the wave has just wrapped around.
-    return [colour(lit[index], lit[index] > lit[index + 1])
+    cursor = version.isolate_cursor
+    return [colour(lit[index], cursor and lit[index] > lit[index + 1], version)
             for index in range(rows)]

@@ -51,7 +51,8 @@ For development you can also drop the folder straight into your Kodi
 | Setting | Description |
 | --- | --- |
 | Scene | `Videos` plays the clips, `Live code rain (generated)` draws the rain instead |
-| Speed of the code rain | How fast the columns fall; `Normal` matches the rendered videos |
+| Variant of the code rain | Which version of the rain to draw, see below |
+| Speed of the code rain | How fast the columns fall; `Normal` is the pace the variant itself sets |
 | Show start notification | Toast when the screensaver kicks in |
 | Show preview window | Shows a loading screen before playback starts |
 
@@ -137,21 +138,46 @@ original, while the skin engine only has to move one control per column.
 
 | Module | What it does |
 | --- | --- |
-| `render/raindrop.py` | The port itself: the raindrop wave, the wobble that varies drop lengths, the cursor at the head of each drop, and the palette. Constants come from `js/config.js` in that project |
+| `render/raindrop.py` | The port itself: the raindrop wave, the wobble that varies drop lengths, the cursor at the head of each drop, and the palette |
+| `render/version.py` | The variants, with the values each of them overrides in `js/config.js` of that project |
 | `render/glyphs.py` | Cuts the 57 glyphs out of `resources/glyphs/`, the films' own glyph atlas. It is a distance field rather than a picture, so the module turns it into coverage maps with clean edges. A font would not do: Kodi resolves fonts against the active skin |
 | `render/rain.py` | Builds and caches the stencil and light textures |
 | `render/png.py` | A minimal PNG codec, because Kodi ships no imaging library |
 | `gui/rain.py` | Puts the controls on screen and gives each light its animation |
 
-The grid is 45 glyphs tall, which puts 80 columns on a 16:9 screen -- the
-density Rezmason's renderer uses by default -- and the window derives the
-column count from the aspect ratio, so the glyphs stay square from 720p up to
-ultra-wide. Each column falls at a speed of its own, between half and full,
-the way the shader picks it; `Speed of the code rain` scales the whole range.
-Generating all 224 textures takes about a second and only happens once: they
-are cached in the addon's profile folder
-(`addon_data/screensaver.matrix/rain`) and reused from there, and textures left
-behind by an older version are cleaned out.
+Every variant brings its own grid, so the shape of both textures is worked out
+from its settings: the classic grid is 45 glyphs tall, which puts 80 columns on
+a 16:9 screen. The window derives the column count from the aspect ratio, so the
+cells keep their shape from 720p up to ultra-wide. Each column falls at a speed
+of its own, between half and full, the way the shader picks it; `Speed of the
+code rain` scales the whole range. Generating a variant's 224 textures takes
+about a second and only happens once: they are cached per variant in the
+addon's profile folder (`addon_data/screensaver.matrix/rain/<variant>`) and
+reused from there, and textures left behind by an older version are cleaned out.
+
+### Variants
+
+`Variant of the code rain` picks between the versions of the effect, with the
+glyphs, colours, density and speed each of them configures in that project:
+
+| Variant | Glyphs | What it looks like |
+| --- | --- | --- |
+| Classic | matrixcode | The green rain of the films |
+| Megacity | megacity | The same green, twice the size |
+| Nightmare | gothic | Dark red, fast and short |
+| Operator | matrixcode | Dense, tall cells, glyphs that switch on rather than fade |
+| Palimpsest | huberfishA | Dark glyphs on a light page |
+| Paradise | coptic | Gold and orange, drifting down very slowly |
+| Rainbow | matrixcode | The classic rain, coloured in vertical stripes |
+| Resurrections | resurrections | The greens of the fourth film |
+| Twilight | huberfishD | Blue, pink and gold |
+
+Variants built on perspective (3D, Trinity, Morpheus, Bugs) are not there:
+those draw their grid in depth, which a stack of flat images cannot do. Of the
+listed ones, Paradise drops the curved grid and the ripples, Operator the
+ripples, Nightmare the thunder, and Nightmare and Palimpsest the slanted grid.
+Nightmare leans on its thunder to light the screen up, so without it the
+variant stays dark -- which is what its raw output looks like.
 
 ### Where the port stops
 
@@ -166,8 +192,8 @@ texture cannot do, and they are left out:
 * **The wobble repeats.** Its two sine waves run at sqrt(2) and sqrt(5) and so
   never line up again; a texture has to. They are moved onto the nearest whole
   number of cycles per loop, which stays within a tenth of the originals and
-  keeps the drop lengths varied, but a column does repeat itself after five
-  raindrops.
+  keeps the drop lengths varied, but a column does repeat itself after a
+  handful of raindrops.
 
 ## Project layout
 
@@ -181,7 +207,7 @@ resources/
   settings.xml
   language/                the .po files (en_gb, de_de)
   playlist/playlist.json   scene names and video URLs
-  glyphs/                  the glyph atlas of the code rain, and its licence
+  glyphs/                  the glyph atlases of the code rain, and their licence
   skins/default/           the window definitions (720p and 1080i)
   lib/
     entrypoints/
@@ -204,6 +230,7 @@ resources/
       player.py              the xbmc.Player subclass used for playback
     render/
       raindrop.py            the ported rain algorithm: waves, cursors, palette
+      version.py             the variants and the glyph atlas each one uses
       glyphs.py              cuts the glyphs out of the distance field atlas
       rain.py                builds and caches the stencil and light textures
       png.py                 minimal PNG codec for the atlas and the textures
@@ -268,10 +295,11 @@ common questions:
 ## Credits
 
 The live code rain is a port of [Rezmason/matrix](https://github.com/Rezmason/matrix),
-MIT licensed, copyright (c) 2018 Rezmason -- both the algorithm in
-`resources/lib/render/raindrop.py` and the glyph atlas in `resources/glyphs/`,
-which is taken from it unchanged. The atlas carries its licence text next to
-it, and that has to stay with the file. That project is also where the videos
+MIT licensed, copyright (c) 2018 Rezmason -- the algorithm in
+`resources/lib/render/raindrop.py`, the variants in `render/version.py`, and
+the glyph atlases in `resources/glyphs/`, which are taken from it unchanged.
+The atlases carry their licence text next to them, and that has to stay with
+the files. That project is also where the videos
 were rendered.
 
 Videos are hosted at

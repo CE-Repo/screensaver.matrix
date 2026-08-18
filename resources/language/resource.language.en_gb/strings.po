@@ -367,3 +367,11 @@ msgstr ""
 msgctxt "#32088"
 msgid "Very fast"
 msgstr ""
+
+msgctxt "#32089"
+msgid "Variant of the code rain"
+msgstr ""
+
+msgctxt "#32090"
+msgid "Which version of the rain to draw. The variants are the ones from Rezmason's Matrix project, each with its own glyphs, colours, density and speed."
+msgstr ""
