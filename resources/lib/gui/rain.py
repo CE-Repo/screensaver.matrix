@@ -92,10 +92,10 @@ class RainScreensaver(ScreensaverWindow):
         width = self.getWidth() or FALLBACK_WIDTH
         height = self.getHeight() or FALLBACK_HEIGHT
 
-        # The cell size follows the window height, so the glyphs keep their
-        # shape on a 720p skin and columns stay square on any aspect ratio.
-        cell = rain.CELL * height / float(rain.DESIGN_HEIGHT)
-        count = max(1, int(round(width / cell)))
+        # The rain always shows the same number of glyphs from top to bottom,
+        # so the columns follow from the aspect ratio: as many as fit next to
+        # each other while staying square.
+        count = max(1, int(round(width * rain.ROWS / float(height))))
 
         # Every column gets a texture of its own where possible: two columns
         # sharing one would scroll the same glyphs and give the trick away.

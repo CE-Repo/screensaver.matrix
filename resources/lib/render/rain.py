@@ -17,15 +17,15 @@ from random import Random
 from render import glyphs
 from render.png import write_rgba
 
-#: Design resolution the textures are drawn for. The window scales them to
-#: whatever coordinate system Kodi hands out, so these never change.
-DESIGN_HEIGHT = 1080
+#: Edge length of one glyph cell in the texture. The window stretches the
+#: textures to whatever coordinate system Kodi hands out, so this is a matter
+#: of texture quality only, not of how large the glyphs end up on screen.
+CELL = glyphs.CELL
 
-#: Edge length of one glyph cell in the design resolution
-CELL = 40
-
-#: Cells per screen height; also the period the pattern repeats with
-ROWS = DESIGN_HEIGHT // CELL
+#: Glyphs per screen height, and with that the period the pattern repeats
+#: with. This is what decides how large the rain is drawn: 45 rows put 80
+#: columns on a 16:9 screen, the grid Rezmason's renderer uses by default.
+ROWS = 45
 
 #: The texture is two periods tall so it can scroll seamlessly
 STRIP_HEIGHT = ROWS * 2 * CELL
@@ -33,7 +33,7 @@ STRIP_HEIGHT = ROWS * 2 * CELL
 #: Number of different columns generated. Enough for every column of an
 #: ultra-wide screen to get its own texture, because two columns sharing one
 #: would scroll the same glyphs at the same time and give the trick away.
-STRIP_COUNT = 64
+STRIP_COUNT = 112
 
 #: Brightness steps of a trail, from the faintest tail to the head
 LEVELS = 16
@@ -49,12 +49,12 @@ _WHITEN_FROM = 0.72
 BACKGROUND_CHANCE = 0.05
 
 #: Trails per column and period, and how long they may be, in cells
-DROPS_PER_PERIOD = (1, 1, 1, 2)
-MIN_TRAIL, MAX_TRAIL = 5, 14
+DROPS_PER_PERIOD = (1, 1, 2, 2)
+MIN_TRAIL, MAX_TRAIL = 8, 24
 
 #: Raised whenever the shape of the textures changes, so old files in the
 #: cache folder are not mistaken for current ones.
-CACHE_VERSION = 1
+CACHE_VERSION = 3
 
 #: Fixed seed: the textures are cached on disk, and a stable seed means the
 #: same addon version always produces the same files.
@@ -152,6 +152,19 @@ def strip_paths(folder):
             for index in range(STRIP_COUNT)]
 
 
+def _drop_stale(folder, current):
+    """Delete textures an earlier version of the addon left behind."""
+    keep = set(os.path.basename(path) for path in current)
+    for name in os.listdir(folder):
+        if name.startswith("rain-") and name not in keep:
+            try:
+                os.remove(os.path.join(folder, name))
+            except OSError:
+                # A leftover we cannot delete costs disk space and nothing
+                # else, so it must not stop the rain from starting.
+                pass
+
+
 def generate(folder, on_progress=None):
     """Write every missing column texture into *folder* and return their paths.
 
@@ -160,17 +173,19 @@ def generate(folder, on_progress=None):
     """
     os.makedirs(folder, exist_ok=True)
     paths = strip_paths(folder)
+    _drop_stale(folder, paths)
     missing = [(index, path) for index, path in enumerate(paths)
                if not os.path.exists(path)]
     if not missing:
         return paths
 
-    cells = _CellCache(glyphs.rasterise(CELL))
+    coverage_maps = glyphs.load()
+    cells = _CellCache(coverage_maps)
     total = len(missing)
     for done, (index, path) in enumerate(missing, start=1):
         # Seeded per column, so an interrupted run resumes with the same
         # textures it would have written the first time.
-        pattern = _column_pattern(Random(_SEED + index), glyphs.GLYPH_COUNT)
+        pattern = _column_pattern(Random(_SEED + index), len(coverage_maps))
         scanlines = []
         for _ in range(2):
             for cell in pattern:

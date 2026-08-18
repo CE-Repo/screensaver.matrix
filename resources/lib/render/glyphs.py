@@ -1,136 +1,164 @@
-"""The glyph set of the code rain, drawn from stroke data.
+"""The glyph set of the code rain, cut from the films' own glyph atlas.
 
-The Matrix uses mirrored katakana in a font that cannot be shipped here, and
-Kodi resolves fonts against the active skin, so a text control could not
-display those characters reliably either. The glyphs below are therefore
-described as line segments on a unit square and rasterised into small coverage
-maps, which the rain assembles into its column textures.
+``resources/glyphs/matrixcode_msdf.png`` comes from Rezmason's Matrix project
+and is a multi-channel signed distance field rather than a picture: the three
+colour channels encode how far each pixel sits from the nearest glyph edge.
+Reading it back is a matter of finding where that distance crosses zero, which
+is what the two passes below do -- one turns the field into a coverage map with
+smooth edges, the other halves it to the size the rain draws its glyphs at.
+
+Both passes work on whole byte strings instead of single pixels: the per-pixel
+comparisons are expressed as ``bytes.translate`` tables and the sums as one big
+integer addition each, so the entire atlas is converted in a few milliseconds
+even without an imaging library.
 """
 
-#: Grid the strokes are placed on: left/centre/right and top/middle/bottom,
-#: plus the two quarter positions in between.
-_L, _C, _R = 0.16, 0.50, 0.84
-_T, _M, _B = 0.14, 0.50, 0.86
-_Q, _S = 0.32, 0.68
+import os
 
-#: One entry per glyph, each a tuple of (x0, y0, x1, y1) strokes. The shapes
-#: are katakana-like rather than actual characters -- at column width they read
-#: as the same alphabet without needing a font.
-_BASE_STROKES = (
-    ((_L, _T, _R, _T), (_R, _T, _R, _Q), (_L, _M, _R, _M), (_C, _M, _L, _B)),
-    ((_L, _Q, _R, _Q), (_S, _T, _S, _M), (_S, _M, _L, _B), (_S, _M, _R, _B)),
-    ((_L, _B, _C, _T), (_C, _Q, _C, _B)),
-    ((_Q, _T, _S, _T), (_L, _Q, _R, _Q), (_R, _Q, _R, _M), (_R, _M, _C, _B)),
-    ((_L, _T, _R, _T), (_C, _T, _C, _B), (_L, _B, _R, _B)),
-    ((_Q, _T, _S, _T), (_L, _Q, _R, _Q), (_S, _Q, _Q, _B), (_C, _M, _R, _B)),
-    ((_L, _Q, _R, _Q), (_S, _T, _S, _M), (_S, _M, _L, _B), (_L, _M, _L, _S)),
-    ((_L, _Q, _R, _Q), (_L, _M, _R, _M), (_S, _T, _Q, _B)),
-    ((_L, _T, _R, _T), (_R, _T, _C, _M), (_C, _M, _L, _B), (_C, _M, _R, _B)),
-    ((_Q, _T, _Q, _M), (_Q, _M, _R, _M), (_R, _T, _L, _B)),
-    ((_L, _T, _R, _T), (_R, _T, _R, _B), (_L, _B, _R, _B)),
-    ((_L, _Q, _R, _Q), (_Q, _T, _Q, _M), (_S, _T, _S, _M), (_C, _M, _C, _B)),
-    ((_L, _T, _Q, _Q), (_L, _M, _Q, _S), (_R, _T, _C, _B)),
-    ((_L, _T, _R, _T), (_R, _T, _L, _B), (_C, _M, _R, _B)),
-    ((_L, _T, _L, _M), (_L, _M, _R, _M), (_C, _T, _C, _B), (_R, _M, _R, _S)),
-    ((_L, _T, _Q, _Q), (_R, _T, _C, _B)),
-    ((_L, _T, _R, _T), (_R, _T, _C, _B), (_L, _M, _C, _M)),
-    ((_Q, _T, _S, _Q), (_L, _Q, _R, _Q), (_C, _Q, _C, _B)),
-    ((_L, _T, _Q, _Q), (_C, _T, _C, _Q), (_R, _T, _C, _B)),
-    ((_Q, _T, _S, _T), (_L, _M, _R, _M), (_C, _M, _C, _B)),
-    ((_C, _T, _C, _B), (_C, _Q, _R, _M)),
-    ((_L, _Q, _R, _Q), (_S, _T, _S, _B), (_L, _M, _C, _B)),
-    ((_Q, _T, _S, _T), (_L, _B, _R, _B)),
-    ((_L, _Q, _R, _Q), (_R, _Q, _L, _B), (_C, _S, _R, _B)),
-    ((_C, _T, _C, _Q), (_L, _Q, _R, _Q), (_C, _Q, _L, _B), (_C, _M, _R, _B)),
-    ((_Q, _T, _L, _B), (_S, _T, _R, _B)),
-    ((_L, _T, _L, _S), (_L, _S, _R, _M), (_L, _S, _R, _B)),
-    ((_L, _T, _R, _T), (_R, _T, _C, _B)),
-    ((_C, _T, _L, _M), (_L, _M, _R, _S), (_Q, _M, _R, _T)),
-    ((_L, _T, _R, _T), (_L, _T, _L, _B), (_L, _B, _R, _B), (_R, _T, _R, _B)),
-    ((_C, _T, _C, _B), (_Q, _Q, _C, _T)),
-    ((_L, _T, _R, _T), (_R, _T, _Q, _B)),
-    ((_L, _T, _R, _T), (_R, _T, _L, _B), (_L, _B, _R, _B)),
-    ((_L, _M, _R, _M),),
-)
+from render import png
+
+#: The atlas as shipped: 512x512, an 8x8 grid of 64x64 cells
+ATLAS_SIZE = 512
+ATLAS_GRID = 8
+ATLAS_CELL = ATLAS_SIZE // ATLAS_GRID
+
+#: Distance range msdfgen was run with, in atlas pixels (see the README next
+#: to the atlas). A pixel value of 0.5 sits exactly on the edge of a glyph,
+#: and the full 0 to 1 range spans this many pixels around it.
+PIXEL_RANGE = 4
+
+#: Edge length of a glyph in the coverage maps this module hands out. It is
+#: close to the size the rain draws its glyphs at, and small enough to keep the
+#: column textures below the 2048 pixel texture limit of older graphics
+#: hardware. The atlas is halved first, which is quick, and resampled to this
+#: size afterwards.
+CELL = 22
+
+#: Steps the edge is resolved into. Each step is one threshold through the
+#: distance field, and the coverage of a pixel is how many of them it passes.
+EDGE_STEPS = 16
+
+_RESOURCES = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ATLAS_PATH = os.path.join(_RESOURCES, "glyphs", "matrixcode_msdf.png")
 
 
-def _mirrored(strokes):
-    """The same shape flipped horizontally, the way the film's glyphs are."""
-    return tuple((1.0 - x0, y0, 1.0 - x1, y1) for x0, y0, x1, y1 in strokes)
+def _table(test):
+    """A translation table mapping every byte to 1 or 0, by *test*."""
+    return bytes(1 if test(value) else 0 for value in range(256))
 
 
-#: Base shapes and their mirror images, which doubles the alphabet for free.
-GLYPH_STROKES = _BASE_STROKES + tuple(
-    _mirrored(strokes) for strokes in _BASE_STROKES)
-
-GLYPH_COUNT = len(GLYPH_STROKES)
-
-#: Samples per pixel and axis while rasterising; the coverage maps are
-#: downsampled afterwards, which is what gives the strokes smooth edges.
-_SUPERSAMPLE = 3
-
-#: Stroke half-width and margin around the glyph, both as a share of the cell.
-_STROKE_RADIUS = 0.042
-_MARGIN = 0.10
+#: The median of the three channels decides: a pixel is inside a glyph when at
+#: least two of them are above the threshold.
+_MAJORITY = _table(lambda votes: votes >= 2)
 
 
-def _draw_stroke(coverage, size, x0, y0, x1, y1, radius):
-    """Mark every sample within *radius* of the segment as covered."""
-    delta_x, delta_y = x1 - x0, y1 - y0
-    length_sq = delta_x * delta_x + delta_y * delta_y
-    radius_sq = radius * radius
+def _edge_thresholds():
+    """The byte values the distance field is sampled at across one edge.
 
-    first_x = max(0, int(min(x0, x1) - radius))
-    last_x = min(size - 1, int(max(x0, x1) + radius) + 1)
-    first_y = max(0, int(min(y0, y1) - radius))
-    last_y = min(size - 1, int(max(y0, y1) + radius) + 1)
-
-    for pixel_y in range(first_y, last_y + 1):
-        row = pixel_y * size
-        sample_y = pixel_y + 0.5
-        for pixel_x in range(first_x, last_x + 1):
-            sample_x = pixel_x + 0.5
-            if length_sq:
-                along = ((sample_x - x0) * delta_x + (sample_y - y0) * delta_y) / length_sq
-                along = 0.0 if along < 0.0 else (1.0 if along > 1.0 else along)
-            else:
-                along = 0.0
-            gap_x = sample_x - (x0 + along * delta_x)
-            gap_y = sample_y - (y0 + along * delta_y)
-            if gap_x * gap_x + gap_y * gap_y <= radius_sq:
-                coverage[row + pixel_x] = 255
+    Coverage runs from nothing to full over a distance of one pixel, which is
+    ``1 / PIXEL_RANGE`` of the value range on either side of the edge at 0.5.
+    """
+    half_band = 255.0 / (2 * PIXEL_RANGE)
+    step = 2 * half_band / EDGE_STEPS
+    return [127.5 - half_band + (index + 0.5) * step for index in range(EDGE_STEPS)]
 
 
-def _downsample(samples, sampled_size, cell):
-    """Average each block of samples into one coverage byte."""
-    coverage = bytearray(cell * cell)
-    divisor = _SUPERSAMPLE * _SUPERSAMPLE
-    for out_y in range(cell):
-        top = out_y * _SUPERSAMPLE * sampled_size
-        out_row = out_y * cell
-        for out_x in range(cell):
-            left = out_x * _SUPERSAMPLE
-            total = 0
-            for offset in range(_SUPERSAMPLE):
-                start = top + offset * sampled_size + left
-                total += sum(samples[start:start + _SUPERSAMPLE])
-            coverage[out_row + out_x] = total // divisor
-    return coverage
+def _coverage(scanlines, pixels, bytes_per_pixel):
+    """Turn the distance field into one coverage byte per pixel."""
+    flat = b"".join(scanlines)
+    channels = [flat[offset::bytes_per_pixel] for offset in range(3)]
+
+    total = 0
+    for threshold in _edge_thresholds():
+        above = _table(lambda value, edge=threshold: value >= edge)
+        votes = sum(int.from_bytes(channel.translate(above), "big")
+                    for channel in channels)
+        # Byte-wise throughout: no sum can reach 256, so nothing carries into
+        # the neighbouring pixel.
+        total += int.from_bytes(
+            votes.to_bytes(pixels, "big").translate(_MAJORITY), "big")
+
+    return total.to_bytes(pixels, "big").translate(
+        bytes(min(255, round(255.0 * value / EDGE_STEPS)) for value in range(256)))
 
 
-def rasterise(cell):
-    """Coverage maps of every glyph, each ``cell * cell`` bytes, 0 to 255."""
-    sampled_size = cell * _SUPERSAMPLE
-    radius = max(1.0, sampled_size * _STROKE_RADIUS)
-    inset = sampled_size * _MARGIN
-    span = sampled_size - 2 * inset
+def _halve(coverage, width, height):
+    """Average every 2x2 block into one pixel."""
+    # Quartering first keeps the sum of four pixels inside one byte. The two
+    # bits that costs are given back by the rescale at the end.
+    quarter = bytes(value // 4 for value in range(256))
+    regain = bytes(min(255, value * 255 // (4 * (255 // 4))) for value in range(256))
 
-    maps = []
-    for strokes in GLYPH_STROKES:
-        samples = bytearray(sampled_size * sampled_size)
-        for x0, y0, x1, y1 in strokes:
-            _draw_stroke(samples, sampled_size,
-                         inset + x0 * span, inset + y0 * span,
-                         inset + x1 * span, inset + y1 * span, radius)
-        maps.append(_downsample(samples, sampled_size, cell))
-    return maps
+    halved_width = width // 2
+    rows = []
+    for row in range(height // 2):
+        top = coverage[(2 * row) * width:(2 * row + 1) * width]
+        bottom = coverage[(2 * row + 1) * width:(2 * row + 2) * width]
+        total = 0
+        for part in (top[0::2], top[1::2], bottom[0::2], bottom[1::2]):
+            total += int.from_bytes(part.translate(quarter), "big")
+        rows.append(total.to_bytes(halved_width, "big").translate(regain))
+    return b"".join(rows), halved_width
+
+
+def _axis_weights(source, target):
+    """For every target pixel, which source pixels feed it and by how much."""
+    scale = source / float(target)
+    weights = []
+    for index in range(target):
+        start, end = index * scale, (index + 1) * scale
+        first = int(start)
+        last = min(int(end - 1e-9), source - 1)
+        weights.append([(position,
+                         (min(end, position + 1) - max(start, position)) / scale)
+                        for position in range(first, last + 1)])
+    return weights
+
+
+def _resample(coverage, width, height, target_width, target_height):
+    """Scale a coverage map by averaging over the area each pixel covers."""
+    horizontal = _axis_weights(width, target_width)
+    vertical = _axis_weights(height, target_height)
+
+    stretched = []
+    for row in range(height):
+        line = coverage[row * width:(row + 1) * width]
+        stretched.append([sum(line[position] * weight for position, weight in entries)
+                          for entries in horizontal])
+
+    resampled = bytearray(target_width * target_height)
+    for row, entries in enumerate(vertical):
+        offset = row * target_width
+        for column in range(target_width):
+            resampled[offset + column] = min(255, int(
+                sum(stretched[position][column] * weight
+                    for position, weight in entries)))
+    return bytes(resampled)
+
+
+def _cut_cells(coverage, width):
+    """Split the grid into glyphs, skipping the cells that carry none."""
+    glyphs = []
+    for index in range(ATLAS_GRID * ATLAS_GRID):
+        column, row = index % ATLAS_GRID, index // ATLAS_GRID
+        block = bytearray()
+        for line in range(CELL):
+            start = (row * CELL + line) * width + column * CELL
+            block += coverage[start:start + CELL]
+        if any(block):
+            glyphs.append(bytes(block))
+    return glyphs
+
+
+def load(path=None):
+    """Coverage maps of every glyph, each ``CELL * CELL`` bytes, 0 to 255."""
+    width, height, bytes_per_pixel, scanlines = png.read(path or ATLAS_PATH)
+    if (width, height) != (ATLAS_SIZE, ATLAS_SIZE):
+        raise ValueError("Glyph atlas is {}x{}, expected {}x{}".format(
+            width, height, ATLAS_SIZE, ATLAS_SIZE))
+
+    coverage = _coverage(scanlines, width * height, bytes_per_pixel)
+    coverage, halved = _halve(coverage, width, height)
+    grid = ATLAS_GRID * CELL
+    coverage = _resample(coverage, halved, halved, grid, grid)
+    return _cut_cells(coverage, grid)
