@@ -172,6 +172,16 @@
             <!-- One toggle per variant of the rain. The screensaver picks at
                  random from the ones left switched on. -->
             <group id="1" label="32092">
+                <setting id="enable-amber" type="boolean" label="32101" help="32095">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="enable-blueprint" type="boolean" label="32102" help="32095">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
                 <setting id="enable-bugs" type="boolean" label="32061" help="32095">
                     <level>0</level>
                     <default>true</default>
@@ -187,6 +197,21 @@
                     <default>false</default>
                     <control type="toggle" />
                 </setting>
+                <setting id="enable-downpour" type="boolean" label="32103" help="32095">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="enable-ember" type="boolean" label="32104" help="32095">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="enable-glacier" type="boolean" label="32105" help="32095">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
                 <setting id="enable-megacity" type="boolean" label="32065" help="32095">
                     <level>0</level>
                     <default>true</default>
@@ -197,7 +222,17 @@
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
+                <setting id="enable-neon" type="boolean" label="32106" help="32095">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
                 <setting id="enable-nightmare" type="boolean" label="32067" help="32095">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="enable-noir" type="boolean" label="32107" help="32095">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
@@ -233,6 +268,11 @@
                     <control type="toggle" />
                 </setting>
                 <setting id="enable-twilight" type="boolean" label="32074" help="32095">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="enable-whiteout" type="boolean" label="32109" help="32095">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />

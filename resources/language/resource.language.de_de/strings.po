@@ -227,3 +227,35 @@ msgstr "Glyphen wechseln lassen"
 msgctxt "#32100"
 msgid "Glyphs swap for others now and then, the way they do in the films. Switching this off saves about two thirds of the space the textures take."
 msgstr "Glyphen tauschen sich hin und wieder aus, wie in den Filmen. Ausgeschaltet spart das etwa zwei Drittel des Platzes, den die Texturen brauchen."
+
+msgctxt "#32101"
+msgid "Amber"
+msgstr "Bernstein"
+
+msgctxt "#32102"
+msgid "Blueprint"
+msgstr "Blaupause"
+
+msgctxt "#32103"
+msgid "Downpour"
+msgstr "Wolkenbruch"
+
+msgctxt "#32104"
+msgid "Ember"
+msgstr "Glut"
+
+msgctxt "#32105"
+msgid "Glacier"
+msgstr "Gletscher"
+
+msgctxt "#32106"
+msgid "Neon"
+msgstr "Neon"
+
+msgctxt "#32107"
+msgid "Noir"
+msgstr "Noir"
+
+msgctxt "#32109"
+msgid "Whiteout"
+msgstr "Whiteout"

@@ -227,3 +227,35 @@ msgstr "Dejar que los glifos cambien"
 msgctxt "#32100"
 msgid "Glyphs swap for others now and then, the way they do in the films. Switching this off saves about two thirds of the space the textures take."
 msgstr "Los glifos se cambian por otros de vez en cuando, como en las películas. Desactivarlo ahorra unos dos tercios del espacio que ocupan las texturas."
+
+msgctxt "#32101"
+msgid "Amber"
+msgstr "Ámbar"
+
+msgctxt "#32102"
+msgid "Blueprint"
+msgstr "Cianotipo"
+
+msgctxt "#32103"
+msgid "Downpour"
+msgstr "Aguacero"
+
+msgctxt "#32104"
+msgid "Ember"
+msgstr "Brasa"
+
+msgctxt "#32105"
+msgid "Glacier"
+msgstr "Glaciar"
+
+msgctxt "#32106"
+msgid "Neon"
+msgstr "Neón"
+
+msgctxt "#32107"
+msgid "Noir"
+msgstr "Noir"
+
+msgctxt "#32109"
+msgid "Whiteout"
+msgstr "Blanco total"

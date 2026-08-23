@@ -227,3 +227,35 @@ msgstr ""
 msgctxt "#32100"
 msgid "Glyphs swap for others now and then, the way they do in the films. Switching this off saves about two thirds of the space the textures take."
 msgstr ""
+
+msgctxt "#32101"
+msgid "Amber"
+msgstr ""
+
+msgctxt "#32102"
+msgid "Blueprint"
+msgstr ""
+
+msgctxt "#32103"
+msgid "Downpour"
+msgstr ""
+
+msgctxt "#32104"
+msgid "Ember"
+msgstr ""
+
+msgctxt "#32105"
+msgid "Glacier"
+msgstr ""
+
+msgctxt "#32106"
+msgid "Neon"
+msgstr ""
+
+msgctxt "#32107"
+msgid "Noir"
+msgstr ""
+
+msgctxt "#32109"
+msgid "Whiteout"
+msgstr ""

@@ -227,3 +227,35 @@ msgstr "De tekens laten wisselen"
 msgctxt "#32100"
 msgid "Glyphs swap for others now and then, the way they do in the films. Switching this off saves about two thirds of the space the textures take."
 msgstr "Tekens worden af en toe door andere vervangen, zoals in de films. Uitschakelen bespaart ongeveer twee derde van de ruimte die de texturen innemen."
+
+msgctxt "#32101"
+msgid "Amber"
+msgstr "Amber"
+
+msgctxt "#32102"
+msgid "Blueprint"
+msgstr "Blauwdruk"
+
+msgctxt "#32103"
+msgid "Downpour"
+msgstr "Wolkbreuk"
+
+msgctxt "#32104"
+msgid "Ember"
+msgstr "Sintel"
+
+msgctxt "#32105"
+msgid "Glacier"
+msgstr "Gletsjer"
+
+msgctxt "#32106"
+msgid "Neon"
+msgstr "Neon"
+
+msgctxt "#32107"
+msgid "Noir"
+msgstr "Noir"
+
+msgctxt "#32109"
+msgid "Whiteout"
+msgstr "Whiteout"

@@ -227,3 +227,35 @@ msgstr "Lasciare che i glifi cambino"
 msgctxt "#32100"
 msgid "Glyphs swap for others now and then, the way they do in the films. Switching this off saves about two thirds of the space the textures take."
 msgstr "I glifi vengono sostituiti di tanto in tanto, come nei film. Disattivarlo fa risparmiare circa due terzi dello spazio occupato dalle texture."
+
+msgctxt "#32101"
+msgid "Amber"
+msgstr "Ambra"
+
+msgctxt "#32102"
+msgid "Blueprint"
+msgstr "Cianografia"
+
+msgctxt "#32103"
+msgid "Downpour"
+msgstr "Acquazzone"
+
+msgctxt "#32104"
+msgid "Ember"
+msgstr "Brace"
+
+msgctxt "#32105"
+msgid "Glacier"
+msgstr "Ghiacciaio"
+
+msgctxt "#32106"
+msgid "Neon"
+msgstr "Neon"
+
+msgctxt "#32107"
+msgid "Noir"
+msgstr "Noir"
+
+msgctxt "#32109"
+msgid "Whiteout"
+msgstr "Bianco totale"

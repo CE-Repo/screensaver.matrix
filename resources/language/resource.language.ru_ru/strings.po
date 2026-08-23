@@ -227,3 +227,35 @@ msgstr "Менять символы"
 msgctxt "#32100"
 msgid "Glyphs swap for others now and then, the way they do in the films. Switching this off saves about two thirds of the space the textures take."
 msgstr "Символы время от времени заменяются другими, как в фильмах. Отключение экономит примерно две трети места, занимаемого текстурами."
+
+msgctxt "#32101"
+msgid "Amber"
+msgstr "Янтарь"
+
+msgctxt "#32102"
+msgid "Blueprint"
+msgstr "Чертёж"
+
+msgctxt "#32103"
+msgid "Downpour"
+msgstr "Ливень"
+
+msgctxt "#32104"
+msgid "Ember"
+msgstr "Угли"
+
+msgctxt "#32105"
+msgid "Glacier"
+msgstr "Ледник"
+
+msgctxt "#32106"
+msgid "Neon"
+msgstr "Неон"
+
+msgctxt "#32107"
+msgid "Noir"
+msgstr "Нуар"
+
+msgctxt "#32109"
+msgid "Whiteout"
+msgstr "Белая мгла"

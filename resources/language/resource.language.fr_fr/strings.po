@@ -227,3 +227,35 @@ msgstr "Laisser les glyphes changer"
 msgctxt "#32100"
 msgid "Glyphs swap for others now and then, the way they do in the films. Switching this off saves about two thirds of the space the textures take."
 msgstr "Les glyphes se remplacent de temps en temps, comme dans les films. Désactiver cela économise environ deux tiers de la place occupée par les textures."
+
+msgctxt "#32101"
+msgid "Amber"
+msgstr "Ambre"
+
+msgctxt "#32102"
+msgid "Blueprint"
+msgstr "Plan bleu"
+
+msgctxt "#32103"
+msgid "Downpour"
+msgstr "Averse"
+
+msgctxt "#32104"
+msgid "Ember"
+msgstr "Braise"
+
+msgctxt "#32105"
+msgid "Glacier"
+msgstr "Glacier"
+
+msgctxt "#32106"
+msgid "Neon"
+msgstr "Néon"
+
+msgctxt "#32107"
+msgid "Noir"
+msgstr "Noir"
+
+msgctxt "#32109"
+msgid "Whiteout"
+msgstr "Voile blanc"

@@ -227,3 +227,35 @@ msgstr "Pozwól znakom się zmieniać"
 msgctxt "#32100"
 msgid "Glyphs swap for others now and then, the way they do in the films. Switching this off saves about two thirds of the space the textures take."
 msgstr "Znaki od czasu do czasu zmieniają się na inne, tak jak w filmach. Wyłączenie oszczędza około dwóch trzecich miejsca zajmowanego przez tekstury."
+
+msgctxt "#32101"
+msgid "Amber"
+msgstr "Bursztyn"
+
+msgctxt "#32102"
+msgid "Blueprint"
+msgstr "Kalka techniczna"
+
+msgctxt "#32103"
+msgid "Downpour"
+msgstr "Ulewa"
+
+msgctxt "#32104"
+msgid "Ember"
+msgstr "Żar"
+
+msgctxt "#32105"
+msgid "Glacier"
+msgstr "Lodowiec"
+
+msgctxt "#32106"
+msgid "Neon"
+msgstr "Neon"
+
+msgctxt "#32107"
+msgid "Noir"
+msgstr "Noir"
+
+msgctxt "#32109"
+msgid "Whiteout"
+msgstr "Biała mgła"

@@ -1,10 +1,15 @@
-"""The versions of the code rain, as Rezmason's project configures them.
+"""The versions of the code rain, Rezmason's and this addon's own.
 
-Every entry below is one of the variants from ``js/config.js`` in that project,
-with the values it overrides copied across. What a variant cannot bring along
-is noted next to it: the effects that need perspective, a curved grid, a second
-render pass or per-frame work on single glyphs have no equivalent here, so
-those variants are drawn flat, with everything else they configure intact.
+The first block below is one entry per variant from ``js/config.js`` in that
+project, with the values it overrides copied across. What such a variant cannot
+bring along is noted next to it: the effects that need perspective, a curved
+grid, a second render pass or per-frame work on single glyphs have no
+equivalent here, so those variants are drawn flat, with everything else they
+configure intact.
+
+The second block is variants of this addon's own. They invent nothing the
+renderer cannot already do -- every one of them is the same set of drawing
+parameters, chosen for a look the ported variants do not cover.
 """
 
 from collections import namedtuple
@@ -39,6 +44,14 @@ PRIDE_STRIPES = tuple(
         (227, 3, 3), (255, 140, 0), (255, 237, 0),
         (0, 128, 38), (0, 77, 255), (117, 8, 135),
     ) for _ in range(2)
+)
+
+#: The stripe colours of the neon variant. Unlike the rainbow's, they are held
+#: over one entry each, so the stripe pass blends them into a single gradient
+#: across the screen rather than into bands.
+NEON_STRIPES = (
+    (255, 42, 166), (214, 44, 255), (122, 88, 255),
+    (45, 180, 255), (0, 229, 255), (140, 90, 255),
 )
 
 #: Everything a version may override, with the values from the project's own
@@ -256,6 +269,146 @@ _VERSIONS = (
             (0.1, hsl(0.6, 0.8, 0.1)),
             (0.5, hsl(0.88, 0.8, 0.5)),
             (0.8, hsl(0.15, 1.0, 0.6)),
+        ),
+    ),
+
+    # -- This addon's own ---------------------------------------------------
+    # Not from Rezmason's config: the same drawing parameters, set for looks
+    # its variants do not cover. Nothing here needs an effect the port lacks.
+
+    Version(
+        # A terminal rather than a rain: the glyphs do not fade, they switch
+        # on, the way the operator's screens do, and they do it in the amber
+        # of a phosphor monitor.
+        "amber", 32101,
+        brightness_override=0.28,
+        cursor_colour=hsl(0.11, 1.0, 0.8),
+        cursor_intensity=1.9,
+        fall_speed=0.15,
+        columns=64,
+        glyph_height_to_width=1.2,
+        raindrop_length=1.4,
+        palette=(
+            (0.0, hsl(0.09, 1.0, 0.0)),
+            (0.3, hsl(0.09, 1.0, 0.5)),
+            (1.0, hsl(0.09, 1.0, 0.85)),
+        ),
+    ),
+    Version(
+        # A technical drawing: cyan on a navy page that never goes fully
+        # black, because the palette's lowest stop is the page itself.
+        "blueprint", 32102,
+        font="huberfishA",
+        cursor_colour=hsl(0.5, 1.0, 0.9),
+        cursor_intensity=1.8,
+        base_brightness=-0.35,
+        fall_speed=0.25,
+        columns=44,
+        raindrop_length=1.1,
+        palette=(
+            (0.0, hsl(0.6, 0.6, 0.08)),
+            (0.35, hsl(0.55, 0.8, 0.35)),
+            (1.0, hsl(0.52, 1.0, 0.85)),
+        ),
+    ),
+    Version(
+        # A cloudburst: short drops, many narrow columns and a fast fall, so
+        # the screen is a moving wall rather than a set of trails.
+        "downpour", 32103,
+        font="resurrections",
+        glyph_edge_crop=0.1,
+        cursor_colour=hsl(0.45, 1.0, 0.85),
+        cursor_intensity=2.5,
+        base_contrast=1.3,
+        base_brightness=-0.45,
+        fall_speed=1.4,
+        columns=112,
+        glyph_height_to_width=1.4,
+        raindrop_length=0.25,
+        palette=(
+            (0.0, hsl(0.45, 0.7, 0.0)),
+            (0.5, hsl(0.45, 0.7, 0.45)),
+            (1.0, hsl(0.42, 0.6, 0.9)),
+        ),
+    ),
+    Version(
+        # Coals: long drops drifting down almost too slowly to notice, with
+        # no cursor to break them up, so the glyphs glow rather than fall.
+        "ember", 32104,
+        font="coptic",
+        isolate_cursor=False,
+        base_contrast=1.0,
+        base_brightness=-0.15,
+        fall_speed=0.08,
+        columns=40,
+        raindrop_length=1.3,
+        palette=(
+            (0.0, hsl(0.0, 0.0, 0.0)),
+            (0.25, hsl(0.02, 1.0, 0.25)),
+            (0.6, hsl(0.06, 1.0, 0.5)),
+            (0.9, hsl(0.1, 1.0, 0.85)),
+        ),
+    ),
+    Version(
+        # The quiet one: pale ice over a long, slow drop and a contrast low
+        # enough that nothing in it ever jumps at you.
+        "glacier", 32105,
+        font="huberfishD",
+        cursor_colour=hsl(0.52, 0.8, 0.9),
+        cursor_intensity=1.6,
+        base_contrast=1.0,
+        base_brightness=-0.12,
+        fall_speed=0.05,
+        columns=50,
+        raindrop_length=1.6,
+        palette=(
+            (0.0, hsl(0.58, 0.6, 0.0)),
+            (0.4, hsl(0.55, 0.5, 0.5)),
+            (1.0, hsl(0.5, 0.45, 0.92)),
+        ),
+    ),
+    Version(
+        # The classic grid of the megacity, run through the stripe pass with
+        # a neon gradient instead of the rainbow's flag.
+        "neon", 32106,
+        font="megacity",
+        animation_speed=0.5,
+        base_contrast=1.35,
+        base_brightness=-0.35,
+        columns=48,
+        stripes=NEON_STRIPES,
+    ),
+    Version(
+        # No colour at all: grey glyphs at a hard contrast with a white
+        # cursor, the way the code looked on the printouts before it was green.
+        "noir", 32107,
+        cursor_colour=hsl(0.0, 0.0, 1.0),
+        cursor_intensity=1.8,
+        base_contrast=1.8,
+        base_brightness=-0.7,
+        columns=72,
+        raindrop_length=0.9,
+        palette=(
+            (0.0, hsl(0.0, 0.0, 0.0)),
+            (0.5, hsl(0.0, 0.0, 0.45)),
+            (1.0, hsl(0.0, 0.0, 1.0)),
+        ),
+    ),
+    Version(
+        # Dark ink on a light page, the way palimpsest does it: the lowest
+        # stop of the palette is the page, and the light darkens it.
+        "whiteout", 32109,
+        font="gothic",
+        isolate_cursor=False,
+        base_contrast=1.2,
+        base_brightness=-0.45,
+        fall_speed=0.3,
+        columns=54,
+        raindrop_length=1.0,
+        palette=(
+            (0.0, hsl(0.13, 0.08, 0.96)),
+            (0.3, hsl(0.6, 0.2, 0.45)),
+            (0.7, hsl(0.62, 0.5, 0.1)),
         ),
     ),
 )

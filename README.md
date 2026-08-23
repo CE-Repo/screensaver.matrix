@@ -3,15 +3,16 @@
 Turns your idle Kodi screen into the Matrix. The code rain is drawn by the
 addon itself -- no video files, no downloads, no network -- as a port of
 [Rezmason/matrix](https://github.com/Rezmason/matrix), with thirteen of its
-variants taking turns.
+variants and eight of the addon's own taking turns.
 
 ---
 
 ## Features
 
 - **The code rain, generated**: nothing is played back, everything is drawn
-- **13 variants** from Rezmason's project, each with its own glyphs, colours,
-  density and speed, and each switchable on its own
+- **21 variants** -- thirteen from Rezmason's project and eight of this addon's
+  own -- each with its own glyphs, colours, density and speed, and each
+  switchable on its own
 - **The glyphs cycle**, the way they do in the films
 - **They take turns**: one is picked at random, held for as long as you like,
   then the next
@@ -24,8 +25,8 @@ variants taking turns.
 ## Requirements
 
 - Any platform Kodi runs on. No internet connection: the addon ships 680 KB of
-  glyph atlases and generates its textures itself. All thirteen variants
-  together come to 33 MB in the profile folder, or 12 MB with the glyphs left
+  glyph atlases and generates its textures itself. All twenty-one variants
+  together come to 75 MB in the profile folder, or 26 MB with the glyphs left
   as they are -- a variant is only ever built once, and only if it is switched
   on.
 
@@ -86,6 +87,8 @@ screensaver runs so a restart cannot repeat it either.
 
 ## The variants
 
+### From Rezmason's project
+
 | Variant | Glyphs | What it looks like | Left out |
 | --- | --- | --- | --- |
 | Bugs | resurrections | Amber and yellow | perspective, glint |
@@ -101,6 +104,22 @@ screensaver runs so a restart cannot repeat it either.
 | Resurrections | resurrections | The greens of the fourth film | -- |
 | Trinity | resurrections | Muted green | perspective, glint |
 | Twilight | huberfishD | Blue, pink and gold | -- |
+
+### This addon's own
+
+Not from `js/config.js`: the same drawing parameters, set for looks the ported
+variants do not cover. None of them needs an effect the port lacks.
+
+| Variant | Glyphs | What it looks like |
+| --- | --- | --- |
+| Amber | matrixcode | A phosphor terminal: glyphs that switch on rather than fade, in amber |
+| Blueprint | huberfishA | Cyan on a navy page that never goes fully black |
+| Downpour | resurrections | A cloudburst: 112 narrow columns, short drops, a fast fall |
+| Ember | coptic | Coals: long drops drifting down, with no cursor to break them up |
+| Glacier | huberfishD | Pale ice, the slowest and quietest of them all |
+| Neon | megacity | The megacity grid, striped in a magenta to cyan gradient |
+| Noir | matrixcode | No colour at all: grey at a hard contrast, with a white cursor |
+| Whiteout | gothic | Dark ink on a light page |
 
 Trinity, Morpheus and Bugs are drawn in perspective in the original, which a
 stack of flat images cannot do; they are drawn flat here, with everything else
@@ -156,7 +175,7 @@ original, while the skin engine only has to move one control per column.
 | Module | What it does |
 | --- | --- |
 | `render/raindrop.py` | The port itself: the raindrop wave, the wobble that varies drop lengths, the cursor at the head of each drop, and the palette |
-| `render/version.py` | The variants, with the values each of them overrides in `js/config.js` of that project |
+| `render/version.py` | The variants: the ported ones with the values they override in `js/config.js` of that project, and this addon's own below them |
 | `render/glyphs.py` | Cuts the glyphs out of the atlases in `resources/glyphs/`. They are distance fields rather than pictures, so the module turns them into coverage maps with clean edges. A font would not do: Kodi resolves fonts against the active skin |
 | `render/rain.py` | Builds and caches the stencil and light textures |
 | `render/png.py` | A minimal PNG codec, because Kodi ships no imaging library |
