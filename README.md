@@ -14,9 +14,10 @@ the glyphs come flying out of.
 - **22 variants** -- thirteen from Rezmason's project and nine of this addon's
   own -- each with its own glyphs, colours, density and speed, and each
   switchable on its own
-- **A 3D tunnel**: the rain keeps falling, but you fly into it -- 128 columns
-  of glyphs at 128 depths come at you out of the distance, built the way
-  Rezmason's volumetric mode is. Same glyphs, same colours, a scene of its own
+- **A 3D tunnel**: the rain keeps falling, but you fly into it -- eighty
+  columns of glyphs, each at a depth of its own, come at you out of the
+  distance, built the way Rezmason's volumetric mode is and moving at the
+  speeds its `?version=3d` sets. Same glyphs, same colours, a scene of its own
 - **The glyphs cycle**, the way they do in the films
 - **They take turns**: one is picked at random, held for as long as you like,
   then the next
@@ -212,24 +213,59 @@ the camera -- `quadDepth = fract(startDepth + time * forwardSpeed)` in
 `rainPass.vert.glsl`. What fills the screen is how many columns are in the air,
 not how large any one of them is.
 
-Here a column is a narrow strip holding a single raindrop, transparent
-everywhere else, and 128 of them are on screen at once. The whole perspective
-is one zoom taken about the middle of the screen rather than about the control:
-that grows the column and carries it away from the vanishing point by the same
+Here a column is a narrow strip holding a raindrop, transparent everywhere
+else, and eighty of them are on screen at once. The whole perspective is one
+zoom taken about the middle of the screen rather than about the control: that
+grows the column and carries it away from the vanishing point by the same
 factor, so a column far off is small and near the middle, and the same column
 close up is large and out at the edge. A flight takes four and a half seconds
 at the normal speed setting, and the "Speed of the code rain" setting scales it
 the way it scales the fall. It rains while it comes, on a slide that shares the
-zoom's period -- more than a screen and a half of fall per flight, and faster
-the nearer it gets, because that slide is scaled up along with the column. And
-it fades up out of the distance and back down as it passes, which is what hides
-the moment both start over, fall included.
+zoom's period, and it fades up out of the distance and back down as it passes,
+which is what hides the moment both start over, fall included.
 
-The columns sit on a jittered grid rather than at random, because a hundred odd
-columns thrown at random leave holes big enough to see, and the eye reads a hole
-as a fault rather than as chance. Their depths are handed out in coprime steps
-across that grid, so depth and place stay unrelated; otherwise the grid would
-arrive as a wave sweeping over the screen.
+The numbers come from that version rather than from taste. `?version=3d` sets
+`fallSpeed: 0.5` and `raindropLength: 0.3`, and volumetric mode brings
+`forwardSpeed: 0.25` with it: a quarter of the tunnel per second is a flight of
+four seconds, and half a unit of fall speed is a screen of rain a second, which
+is four screens over one flight -- and faster than that up close, because the
+slide is scaled up along with the column. Its `baseBrightness: -0.9` and
+`baseContrast: 1.5` are deliberately not taken: at that setting the shader
+leans on a bloom pass to carry the picture and this port has none, and a strip
+here is a still image, so a glyph the palette draws black is simply a hole in
+it.
+
+**A column must never show its top end.** That is a matter of length, and two
+things pull against each other: the fall drags the top down, and the zoom
+carries it up, by a factor that grows as the column comes nearer. A top edge
+*d* above the middle of the screen is drawn *d* times the zoom above it, so it
+is off the picture once that product passes half a screen -- which can hold at
+one moment of the flight and fail at the next. `tunnel_length` therefore walks
+the whole flight, moment by moment, and returns the length whose worst moment
+still clears the edge; `tunnel_pose` never lets a column be shorter than that.
+The constants above are a preference, not a promise, and none of their settings
+can quietly let a column end in mid-air.
+
+That comes to two and a half to five screens of column. One texture cannot be
+that long: 32 glyphs at 64 pixels is 2048, the limit older hardware takes. A
+column is therefore two controls sharing one strip, one directly above the
+other. They cost no more memory than one, and because both are zoomed about the
+same point they stay exactly adjacent at every depth.
+
+The columns sit on a jittered grid rather than at random, because columns thrown
+at random leave holes big enough to see, and the eye reads a hole as a fault
+rather than as chance. Their depths are handed out in coprime steps across that
+grid, so depth and place stay unrelated; otherwise the grid would arrive as a
+wave sweeping over the screen.
+
+**The scene has to be full from its first frame.** A looping animation can be
+started but never joined halfway, so every column of the field is at the far end
+the moment the tunnel appears, and the picture would build itself up over a
+whole flight. Forty-eight further columns cover exactly that gap: each begins
+partway through a flight, spread across the whole of one, flies the rest of it
+once and is gone. They start at full brightness whatever their depth and give it
+up late, because they have to carry the picture while the field behind them is
+still coming up to strength.
 
 Depth is the zoom and the fade, not a projection: the strips are flat, they do
 not turn, and their stacking order stays as it is while their depth changes. On

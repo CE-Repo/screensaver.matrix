@@ -427,10 +427,15 @@ _VERSIONS = (
         scene=SCENE_TUNNEL,
         cursor_colour=hsl(0.242, 1, 0.85),
         cursor_intensity=1.6,
+        # The 3d version's own fall speed and raindrop length. Its contrast
+        # and brightness are not taken with them: at -0.9 the shader leans on
+        # a bloom pass to carry the picture, and this port has none. A strip
+        # here is a still image, so a glyph the palette draws black is simply
+        # a hole in it.
         base_contrast=1.0,
         base_brightness=-0.15,
-        #: The pace of the flight, on the same scale the rain falls at
-        fall_speed=0.3,
+        fall_speed=0.5,
+        raindrop_length=0.3,
     ),
 )
 

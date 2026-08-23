@@ -26,8 +26,9 @@ from render import glyphs, rain, raindrop
 from render.png import write_rgba
 
 #: The glyphs one strip holds, and the texture pixels per glyph. 32 cells of
-#: 64 pixels come to 64 x 768: small enough to keep dozens of them in memory,
-#: large enough that a strip close to the viewer still has detail.
+#: 64 pixels come to 64 x 2048, which is the texture limit of older hardware
+#: exactly: a long run of glyphs, each with enough detail to stand being
+#: brought right up to the viewer.
 STRIP_ROWS = 32
 CELL = 64
 
@@ -38,17 +39,18 @@ CELL = 64
 STRIPS = 36
 
 #: The share of a strip's cells left empty. A solid column of glyphs looks
-#: printed; a few holes in it look like rain.
-GAPS = 0.16
+#: printed; the odd hole in it looks like rain. Kept low: every hole is more
+#: black on a screen that has enough of it already.
+GAPS = 0.06
 
 #: The brightness along a drop, from the tail up to the glyph below the head.
-#: Kept off the dark end: a strip is a still image, and a glyph the palette
-#: draws black would simply be a hole in it.
-MIN_LIGHT, MAX_LIGHT = 0.35, 0.85
+#: Kept well off the dark end: a strip is a still image, and a glyph the
+#: palette draws black is simply another hole in it.
+MIN_LIGHT, MAX_LIGHT = 0.5, 0.9
 
 #: Raised whenever the shape of the strips changes, so old files in the cache
 #: folder are not mistaken for current ones.
-CACHE_VERSION = 3
+CACHE_VERSION = 4
 
 #: Fixed seed, so the same addon version always produces the same strips
 _SEED = 0x33445459

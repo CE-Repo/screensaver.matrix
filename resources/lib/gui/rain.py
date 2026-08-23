@@ -79,13 +79,27 @@ FADE_STEPS = 24
 #: as plain black if the window were ever rebuilt. One is invisible either way.
 OPAQUE, CLEAR = 255, 1
 
-#: The tunnel's flight: the zoom a column enters and leaves the screen at, as
-#: a percentage of its size at the screen plane, and the seconds it takes from
-#: the far end to past the viewer -- given for a variant flying at the pace
-#: below, and scaled from there the way the rain scales its fall.
-TUNNEL_FAR, TUNNEL_NEAR = 12, 400
-TUNNEL_SECONDS = 4.5
-TUNNEL_REFERENCE_SPEED = 0.3
+#: The zoom a column enters and leaves the screen at, as a percentage of its
+#: size at the screen plane.
+TUNNEL_FAR, TUNNEL_NEAR = 12, 280
+
+#: How much of the tunnel a column puts behind it in a second: Rezmason's
+#: ``forwardSpeed``, which its 3d version leaves at the volumetric default of
+#: a quarter. A flight therefore takes four seconds, and the speed setting
+#: scales that the way it scales the rain's fall.
+TUNNEL_FORWARD_SPEED = 0.25
+
+#: Screens a column falls per second at the screen plane, per unit of the
+#: variant's fall speed. The 3d version raises that speed to 0.5, which at the
+#: scale below comes to a screen a second -- as against the tenth of one this
+#: had before it was measured against the original.
+TUNNEL_FALL_SCALE = 2.0
+
+#: The share of its fall a column makes before it reaches the screen plane.
+#: Three quarters rather than half, so most of the falling is done while the
+#: column is still far off: what is left when it is close, and magnified, is
+#: what could drag its top end down into the picture.
+TUNNEL_FALL_LEAD = 0.75
 
 #: Columns in the air at once, as the grid they are spread over. This is what
 #: fills the screen -- the same job density does in Rezmason's volumetric
@@ -93,7 +107,7 @@ TUNNEL_REFERENCE_SPEED = 0.3
 #: They are placed on a grid and jittered inside their cell rather than
 #: scattered outright: a hundred odd columns thrown at random leave holes big
 #: enough to see, and the eye reads a hole as a fault rather than as chance.
-TUNNEL_ACROSS, TUNNEL_DOWN = 16, 8
+TUNNEL_ACROSS, TUNNEL_DOWN = 20, 4
 TUNNEL_COLUMNS = TUNNEL_ACROSS * TUNNEL_DOWN
 
 #: Steps taken through the columns when handing out depths. Coprime with
@@ -102,25 +116,61 @@ TUNNEL_COLUMNS = TUNNEL_ACROSS * TUNNEL_DOWN
 #: the grid would arrive as a wave sweeping across the screen.
 TUNNEL_DEPTH_STEP = 47
 
+#: Columns added for the first flight only. A looping animation can be started
+#: but never joined halfway, so at the moment the tunnel appears every column
+#: of the field is still at the far end, and the picture would build up over a
+#: whole flight before it is full. These begin partway through a flight
+#: instead, fly the rest of it once and then stay out of the way, which is
+#: exactly the part of the tunnel the field has yet to fill.
+TUNNEL_STARTERS_ACROSS, TUNNEL_STARTERS_DOWN = 12, 4
+TUNNEL_STARTERS = TUNNEL_STARTERS_ACROSS * TUNNEL_STARTERS_DOWN
+
+#: How far through a flight the first and the last starter begin. Neither end
+#: is worth reaching: a starter beginning at the very back only doubles a
+#: column the field already has out there, and one beginning at the very front
+#: is gone before it can be seen.
+TUNNEL_FIRST, TUNNEL_LAST = 0.08, 0.94
+
+#: How the starters are spread across that range. Evenly, because that is how
+#: the field spreads its own depths, and a starter stands in for exactly the
+#: field column that has not reached that depth yet.
+TUNNEL_STARTER_BIAS = 1.0
+
 #: How far from the middle a column may sit when it passes the screen plane,
 #: in screens. Beyond one it is off the picture at that moment, but it was on
 #: it while it was further away, which is where the edges of the screen get
 #: their columns from.
-TUNNEL_SPREAD = 1.15
+TUNNEL_SPREAD = 1.0
 
-#: The height of a column at the screen plane, in screen heights, and how much
-#: that varies. Every column is a little nearer or further than the zoom alone
-#: would put it, which is what keeps them from lining up in shells.
-TUNNEL_HEIGHT = 0.5
-TUNNEL_HEIGHT_SPREAD = 0.3
+#: The same across the height of the screen, where it is kept shorter: a
+#: column is several screens long, so it does not need spreading to cover the
+#: picture, and every bit of vertical spread is length its top end has to make
+#: up for -- see the height below.
+TUNNEL_SPREAD_DOWN = 0.6
 
-#: Screen heights a column falls while it makes its flight, and how much that
-#: varies. The rain has to keep raining while the viewer flies into it, or the
-#: drops hang in the air like a photograph. Together with the flight above
-#: this is the fall speed: a column crosses about a screen every three
-#: seconds at the far end, and faster as it comes, because the same slide is
-#: scaled up along with the column.
-TUNNEL_FALL = 1.6
+#: The height of one half of a column at the screen plane, in screen heights,
+#: and how much that varies. Every column is a little nearer or further than
+#: the zoom alone would put it, which is what keeps them from lining up in
+#: shells.
+#:
+#: A column is drawn as two controls sharing one strip, one directly above the
+#: other, because how long it is decides whether its top end can ever be seen.
+#: The zoom is taken about the middle of the screen, so a top edge that sits
+#: above that middle is carried further up the closer the column comes, and
+#: can never enter the picture; one that sits below it is carried down into
+#: view. Worst case is the lowest row of the grid at the end of its fall, so
+#: the halves must come to more than the spread plus the fall between them --
+#: 3.0 screens against the 2.6 that needs. A single texture cannot be that
+#: long: 32 glyphs at 64 pixels is 2048, which is the limit older hardware
+#: takes. Two controls of one texture cost no more memory than one, and since
+#: both are zoomed about the same point they stay exactly adjacent at every
+#: depth.
+TUNNEL_HEIGHT = 1.5
+TUNNEL_HEIGHT_SPREAD = 0.2
+
+#: How much one column's fall may differ from the next's. The rain has to keep
+#: raining while the viewer flies into it, or the drops hang in the air like a
+#: photograph, and no two columns of the rain ever fell at the same rate.
 TUNNEL_FALL_SPREAD = 0.35
 
 #: The flight itself, and the whole of the perspective. Taken about the middle
@@ -134,6 +184,22 @@ TUNNEL_FALL_SPREAD = 0.35
 _APPROACH = ("effect=zoom start={far} end={near} center={centre} "
              "time={duration} delay={delay} loop=true reversible=false "
              "condition=true tween=quadratic easing=in")
+
+#: A starter's one flight: the same three effects, run once from where it
+#: begins to the near end, and then left where they finish. The fade ends at
+#: nothing, so a starter that has flown its flight stays invisible for as long
+#: as the tunnel is up.
+_STARTER = ("effect=zoom start={from_} end={near} center={centre} "
+            "time={duration} reversible=false condition=true "
+            "tween=quadratic easing=in")
+_STARTER_FALL = ("effect=slide start=0,0 end=0,{distance} time={duration} "
+                 "reversible=false condition=true tween=linear")
+#: Eased in rather than evenly: a starter holds its brightness through the
+#: first part of its run and gives it up late, which is what keeps the
+#: picture even while the field behind it is still coming up to strength.
+_STARTER_DEPTH = ("effect=fade start=100 end=0 time={duration} "
+                  "reversible=false condition=true "
+                  "tween=quadratic easing=in")
 
 #: The fall. It shares the flight's period and delay, so both start over in
 #: the same moment -- the one the fade below has made invisible. That is what
@@ -154,6 +220,33 @@ _DEPTH = ("effect=fade start=0 end=100 time={half} delay={delay} "
 #: the loop has no seam.
 _SLIDE = ("effect=slide start=0,0 end=0,{distance} time={duration} "
           "loop=true reversible=false condition=true tween=linear")
+
+
+def tunnel_zoom(phase):
+    """How much a column is magnified this far through its flight.
+
+    The skin engine's quadratic easing, as a factor rather than a percentage.
+    """
+    return (TUNNEL_FAR + (TUNNEL_NEAR - TUNNEL_FAR) * phase * phase) / 100.0
+
+
+def tunnel_length(height, offset, fall):
+    """The shortest a column may be for its top end to stay out of the picture.
+
+    The zoom is taken about the middle of the screen, so a column whose top
+    sits *d* above that middle has it drawn *d* times the zoom above it, and
+    the top edge is off the picture once that reaches half the screen. What
+    the top has to clear therefore changes through the flight: the fall drags
+    it down, and the zoom carries it up, and the two do not cancel.
+
+    This walks the whole flight and takes the worst moment of it. The whole
+    of it, right to the end: a column of the field is as good as invisible by
+    then, but a starter that begins there is at full brightness, and it is
+    the same length rule that has to hold for both.
+    """
+    return max((offset + fall * (step / 100.0 - TUNNEL_FALL_LEAD)
+                + height / 2.0 / tunnel_zoom(step / 100.0))
+               for step in range(0, 101))
 
 
 def texture_folder():
@@ -498,83 +591,144 @@ class RainScreensaver(ScreensaverWindow):
 
     def tunnel_seconds(self, variant):
         """Seconds one column takes from the far end to past the viewer."""
-        return (TUNNEL_SECONDS * self.speed_factor()
-                * TUNNEL_REFERENCE_SPEED / variant.fall_speed
-                / variant.animation_speed)
+        return (self.speed_factor()
+                / (TUNNEL_FORWARD_SPEED * variant.animation_speed))
+
+    def tunnel_fall(self, variant, height):
+        """Pixels a column falls over one flight, before its own variation."""
+        return (height * variant.fall_speed * TUNNEL_FALL_SCALE
+                * self.tunnel_seconds(variant))
+
+    @staticmethod
+    def tunnel_pose(index, across, down, columns, width, height, falls):
+        """Where one column stands as it passes the screen plane.
+
+        Its cell of the grid, jittered inside it, and the size and fall that
+        go with it. Everything the flight does follows from this pose: the
+        zoom about the middle of the screen carries it outwards and grows it
+        by the same factor, which is what a projection does.
+        """
+        # The same hash the rain scatters its columns with, read at four
+        # places, so a column keeps its place and its pace across runs.
+        jitter_x = random_float(index, 0.0) - 0.5
+        jitter_y = random_float(index, 1.0) - 0.5
+        size = random_float(index, 2.0)
+        pace = random_float(index, 3.0)
+
+        fall = int(round(falls * (1 - TUNNEL_FALL_SPREAD
+                                  + 2 * TUNNEL_FALL_SPREAD * pace)))
+
+        # The spread reaches beyond the screen, because a column out there is
+        # off the picture as it passes but was on it while it was further
+        # away, and that is where the edges get their columns from.
+        span_x = TUNNEL_SPREAD * width / float(across)
+        span_y = TUNNEL_SPREAD_DOWN * height / float(down)
+        place_x = (columns % across) + 0.5 + jitter_x
+        place_y = (columns // across) + 0.5 + jitter_y
+        offset = (place_y - down / 2.0) * span_y
+
+        tall = int(round(height * TUNNEL_HEIGHT
+                         * (1 - TUNNEL_HEIGHT_SPREAD
+                            + 2 * TUNNEL_HEIGHT_SPREAD * size)))
+        # Never shorter than this column needs to be where it stands and for
+        # the fall it makes. Worked out rather than left to the constants
+        # above, so none of their settings can quietly let a column end in
+        # mid-air.
+        tall = max(tall, int(tunnel_length(height, offset, fall)) + 1)
+        wide = max(1, int(round(tall / float(tunnel.STRIP_ROWS))))
+
+        left = int(round(width / 2.0 - wide / 2.0
+                         + (place_x - across / 2.0) * span_x))
+        # Hung most of a fall above its place, so the falling it has left
+        # when it comes close is small. The pair straddles that place, which
+        # puts its top a whole half above it -- far enough, with the length
+        # above, that the zoom can only carry that top out of the picture.
+        top = int(round(height / 2.0 - tall + offset
+                        - fall * TUNNEL_FALL_LEAD))
+        return left, top, wide, tall, fall
 
     def add_drops(self, variant, strips):
         """Fill the window with the tunnel and return how many columns it has.
 
-        Each column is placed where it would stand as it passes the screen
-        plane, and everything else follows from the zoom about the middle of
-        the screen: far away it is small and close to the vanishing point,
-        near it is large and out towards the edge. The columns are started a
-        fraction of a flight apart, so their depths are spread evenly through
-        the tunnel rather than arriving in shells.
+        The field is the columns that stay: each flies the whole tunnel, over
+        and over, and they are started a fraction of a flight apart so their
+        depths spread evenly rather than arriving in shells. The starters are
+        the columns that do not stay: a looping animation can be started but
+        never joined halfway, so without them the field would have to build
+        itself up over a whole flight before the picture was full. They begin
+        partway through a flight, fly the rest of it once, and are gone.
 
-        Their stacking order stays as it is while their depth changes, so a
-        near column is sometimes drawn behind a far one. On a black ground
-        with drops this narrow the two look the same either way.
+        The stacking order stays as it is while the depths change, so a near
+        column is sometimes drawn behind a far one. On a black ground with
+        drops this narrow the two look the same either way.
         """
         width = self.getWidth() or FALLBACK_WIDTH
         height = self.getHeight() or FALLBACK_HEIGHT
         duration = int(round(self.tunnel_seconds(variant) * 1000))
+        falls = self.tunnel_fall(variant, height)
         centre = "{},{}".format(width // 2, height // 2)
+        span = TUNNEL_NEAR - TUNNEL_FAR
 
         controls, animations = [], []
         for index in range(TUNNEL_COLUMNS):
-            # The same hash the rain scatters its columns with, read at three
-            # places, so a column keeps its place and its pace across runs.
-            jitter_x = random_float(index, 0.0) - 0.5
-            jitter_y = random_float(index, 1.0) - 0.5
-            size = random_float(index, 2.0)
-            pace = random_float(index, 3.0)
-
-            # Its size at the screen plane, and the strip it draws
-            tall = int(round(height * TUNNEL_HEIGHT
-                             * (1 - TUNNEL_HEIGHT_SPREAD
-                                + 2 * TUNNEL_HEIGHT_SPREAD * size)))
-            wide = max(1, int(round(tall / float(tunnel.STRIP_ROWS))))
-
-            # Where it stands as it passes the screen plane: its cell of the
-            # grid, jittered inside it. The spread reaches beyond the screen,
-            # because such a column is off the picture by then but was on it
-            # while it was further away, and that is where the columns at the
-            # edges come from.
-            span_x = TUNNEL_SPREAD * width / float(TUNNEL_ACROSS)
-            span_y = TUNNEL_SPREAD * height / float(TUNNEL_DOWN)
-            across = (index % TUNNEL_ACROSS) + 0.5 + jitter_x
-            down = (index // TUNNEL_ACROSS) + 0.5 + jitter_y
-            fall = int(round(height * TUNNEL_FALL
-                             * (1 - TUNNEL_FALL_SPREAD
-                                + 2 * TUNNEL_FALL_SPREAD * pace)))
-            left = int(round(width / 2.0 - wide / 2.0
-                             + (across - TUNNEL_ACROSS / 2.0) * span_x))
-            # Hung half a fall above its place, so it crosses the screen in
-            # the middle of its flight, where it is nearest and brightest.
-            top = int(round(height / 2.0 - tall / 2.0
-                            + (down - TUNNEL_DOWN / 2.0) * span_y
-                            - fall / 2.0))
-
-            # Evenly spread through the tunnel, and handed out in steps
-            # across the grid so depth and place stay unrelated -- the same
-            # job startDepth does in the original.
+            left, top, wide, tall, fall = self.tunnel_pose(
+                index, TUNNEL_ACROSS, TUNNEL_DOWN, index, width, height, falls)
+            # Evenly spread through the tunnel, and handed out in steps across
+            # the grid so depth and place stay unrelated -- the same job
+            # startDepth does in the original. Without that the grid would
+            # arrive as a wave sweeping over the screen.
             delay = int(round((index * TUNNEL_DEPTH_STEP % TUNNEL_COLUMNS)
                               * duration / float(TUNNEL_COLUMNS)))
 
-            drop = xbmcgui.ControlImage(
-                left, top, wide, tall,
-                strips[index % len(strips)], aspectRatio=0)
-            controls.append(drop)
-            animations.append((drop, [
-                ("conditional", _APPROACH.format(
-                    far=TUNNEL_FAR, near=TUNNEL_NEAR, centre=centre,
-                    duration=duration, delay=delay)),
-                ("conditional", _FALL.format(
-                    distance=fall, duration=duration, delay=delay)),
-                ("conditional", _DEPTH.format(
-                    half=duration // 2, delay=delay)),
-            ]))
+            for half in range(2):
+                drop = xbmcgui.ControlImage(
+                    left, top + half * tall, wide, tall,
+                    strips[index % len(strips)], aspectRatio=0)
+                controls.append(drop)
+                animations.append((drop, [
+                    ("conditional", _APPROACH.format(
+                        far=TUNNEL_FAR, near=TUNNEL_NEAR, centre=centre,
+                        duration=duration, delay=delay)),
+                    ("conditional", _FALL.format(
+                        distance=fall, duration=duration, delay=delay)),
+                    ("conditional", _DEPTH.format(
+                        half=duration // 2, delay=delay)),
+                ]))
+
+        for number in range(TUNNEL_STARTERS):
+            index = TUNNEL_COLUMNS + number
+            left, top, wide, tall, fall = self.tunnel_pose(
+                index, TUNNEL_STARTERS_ACROSS, TUNNEL_STARTERS_DOWN,
+                number, width, height, falls)
+
+            # How far through a flight it begins, spread across the whole of
+            # one so the field is complete from the first frame
+            share = ((number + 0.5) / TUNNEL_STARTERS) ** TUNNEL_STARTER_BIAS
+            begun = TUNNEL_FIRST + (TUNNEL_LAST - TUNNEL_FIRST) * share
+            left_to_go = int(round(duration * (1 - begun)))
+            # Where the flight would have taken it by now: the zoom it has
+            # reached and the fall it has made. It starts at full brightness
+            # whatever its depth, rather than at the brightness that depth
+            # would have: it has to carry the picture while the field behind
+            # it is still filling, and the two together are what the eye sees.
+            from_ = int(round(TUNNEL_FAR + span * begun * begun))
+
+            fallen = int(round(fall * begun))
+            for half in range(2):
+                drop = xbmcgui.ControlImage(
+                    left, top + fallen + half * tall, wide, tall,
+                    strips[index % len(strips)], aspectRatio=0)
+                controls.append(drop)
+                animations.append((drop, [
+                    ("conditional", _STARTER.format(
+                        from_=from_, near=TUNNEL_NEAR, centre=centre,
+                        duration=left_to_go)),
+                    ("conditional", _STARTER_FALL.format(
+                        distance=int(round(fall * (1 - begun))),
+                        duration=left_to_go)),
+                    ("conditional", _STARTER_DEPTH.format(
+                        duration=left_to_go)),
+                ]))
 
         # Added last, so it covers the columns rather than sitting behind them
         self.cover = self.new_cover(width, height, OPAQUE)
