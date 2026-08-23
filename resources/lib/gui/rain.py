@@ -9,6 +9,13 @@ shows through in the shape of glyphs that stay where they are.
 That leaves the skin engine to move a single control per column, which is why
 the rain costs nothing per frame in Python.
 
+A variant may draw the other scene instead: the tunnel, where the rain comes at
+the viewer. There a column is a narrow strip holding one raindrop, dozens of
+them are on screen at once, and each has a depth of its own: the skin engine
+zooms it up about the middle of the screen, which both grows it and carries it
+outwards, while it falls. The same holds there -- three animations per column,
+nothing per frame.
+
 The variants the user leaves switched on take turns: one is picked at random,
 held for the configured while, and then swapped for the next one. The textures
 of the variant coming up are built while the current one is still on screen, so
@@ -28,8 +35,8 @@ from core.addon import (get_bool, get_int, get_string, profile_folder, set_bool,
                         set_string, translate)
 from gui import skin
 from gui.base import ScreensaverWindow, monitor
-from render import rain, version
-from render.raindrop import column_offsets
+from render import rain, tunnel, version
+from render.raindrop import column_offsets, random_float
 
 #: Folder below the addon's profile the generated textures are cached in
 TEXTURE_FOLDER = "rain"
@@ -71,6 +78,77 @@ FADE_STEPS = 24
 #: of zero when it builds a control, so a cover left at zero would come back
 #: as plain black if the window were ever rebuilt. One is invisible either way.
 OPAQUE, CLEAR = 255, 1
+
+#: The tunnel's flight: the zoom a column enters and leaves the screen at, as
+#: a percentage of its size at the screen plane, and the seconds it takes from
+#: the far end to past the viewer -- given for a variant flying at the pace
+#: below, and scaled from there the way the rain scales its fall.
+TUNNEL_FAR, TUNNEL_NEAR = 12, 400
+TUNNEL_SECONDS = 4.5
+TUNNEL_REFERENCE_SPEED = 0.3
+
+#: Columns in the air at once, as the grid they are spread over. This is what
+#: fills the screen -- the same job density does in Rezmason's volumetric
+#: mode, where it multiplies the column count rather than enlarging anything.
+#: They are placed on a grid and jittered inside their cell rather than
+#: scattered outright: a hundred odd columns thrown at random leave holes big
+#: enough to see, and the eye reads a hole as a fault rather than as chance.
+TUNNEL_ACROSS, TUNNEL_DOWN = 16, 8
+TUNNEL_COLUMNS = TUNNEL_ACROSS * TUNNEL_DOWN
+
+#: Steps taken through the columns when handing out depths. Coprime with
+#: their number, so every column gets a depth of its own, evenly spread
+#: through the tunnel and unrelated to where the column stands -- otherwise
+#: the grid would arrive as a wave sweeping across the screen.
+TUNNEL_DEPTH_STEP = 47
+
+#: How far from the middle a column may sit when it passes the screen plane,
+#: in screens. Beyond one it is off the picture at that moment, but it was on
+#: it while it was further away, which is where the edges of the screen get
+#: their columns from.
+TUNNEL_SPREAD = 1.15
+
+#: The height of a column at the screen plane, in screen heights, and how much
+#: that varies. Every column is a little nearer or further than the zoom alone
+#: would put it, which is what keeps them from lining up in shells.
+TUNNEL_HEIGHT = 0.5
+TUNNEL_HEIGHT_SPREAD = 0.3
+
+#: Screen heights a column falls while it makes its flight, and how much that
+#: varies. The rain has to keep raining while the viewer flies into it, or the
+#: drops hang in the air like a photograph. Together with the flight above
+#: this is the fall speed: a column crosses about a screen every three
+#: seconds at the far end, and faster as it comes, because the same slide is
+#: scaled up along with the column.
+TUNNEL_FALL = 1.6
+TUNNEL_FALL_SPREAD = 0.35
+
+#: The flight itself, and the whole of the perspective. Taken about the middle
+#: of the screen rather than the middle of the column, a zoom does both halves
+#: of what a projection does: it grows the column, and it pushes it away from
+#: the vanishing point by the same factor. A column far off is therefore small
+#: and near the middle; the same column close up is large and out at the edge.
+#: Quadratic rather than linear, because something approaching at a steady
+#: speed grows ever faster the nearer it gets, and easing in is the closest
+#: the skin engine has to that.
+_APPROACH = ("effect=zoom start={far} end={near} center={centre} "
+             "time={duration} delay={delay} loop=true reversible=false "
+             "condition=true tween=quadratic easing=in")
+
+#: The fall. It shares the flight's period and delay, so both start over in
+#: the same moment -- the one the fade below has made invisible. That is what
+#: keeps the fall from needing a seam of its own.
+_FALL = ("effect=slide start=0,0 end=0,{distance} time={duration} "
+         "delay={delay} loop=true reversible=false condition=true "
+         "tween=linear")
+
+#: Fades a column up out of the distance and back down as it passes, so the
+#: moment it jumps back to the far end happens while it is invisible. A single
+#: effect cannot rise and fall, but a pulsed one runs its half forwards and
+#: then backwards, which is exactly that -- and it keeps the same period as
+#: the flight, so the two stay in step.
+_DEPTH = ("effect=fade start=0 end=100 time={half} delay={delay} "
+          "pulse=true reversible=false condition=true tween=sine")
 
 #: The light slides down by exactly the height its pattern repeats with, so
 #: the loop has no seam.
@@ -240,12 +318,20 @@ class RainScreensaver(ScreensaverWindow):
                 logger.debug("Could not cycle a column: {}".format(exc))
                 return
 
+    @staticmethod
+    def build(variant, on_progress=None):
+        """Generate the textures of whichever scene the variant draws."""
+        if variant.scene == version.SCENE_TUNNEL:
+            return tunnel.generate(texture_folder(), variant, on_progress)
+        return rain.generate(texture_folder(), variant, on_progress,
+                             churn_sets())
+
     def prepare(self, variant):
         """Build a variant's textures, returning False if that is impossible."""
         try:
-            rain.generate(texture_folder(), variant, sets=churn_sets())
+            self.build(variant)
         except OSError as exc:
-            logger.error("Could not generate the rain textures: {}".format(exc))
+            logger.error("Could not generate the textures: {}".format(exc))
             return False
         return True
 
@@ -254,10 +340,9 @@ class RainScreensaver(ScreensaverWindow):
     def show_variant(self, variant, on_progress=None):
         """Replace whatever is on screen with *variant*."""
         try:
-            stencils, lights = rain.generate(
-                texture_folder(), variant, on_progress, churn_sets())
+            textures = self.build(variant, on_progress)
         except OSError as exc:
-            logger.error("Could not generate the rain textures: {}".format(exc))
+            logger.error("Could not generate the textures: {}".format(exc))
             self.show_message(32082)
             return False
 
@@ -273,9 +358,12 @@ class RainScreensaver(ScreensaverWindow):
         # and end up on top. The window's own backdrop is black as well, so
         # the moment in between looks no different.
         self.clear_columns()
-        columns = self.add_columns(variant, stencils, lights)
+        if variant.scene == version.SCENE_TUNNEL:
+            count, what = self.add_drops(variant, textures), "columns"
+        else:
+            count, what = self.add_columns(variant, *textures), "columns"
         set_string(LAST_VARIANT, variant.name)
-        logger.info("Code rain: {} in {} columns".format(variant.name, columns))
+        logger.info("Code rain: {} in {} {}".format(variant.name, count, what))
         return self.fade(OPAQUE, CLEAR)
 
     def fade(self, first, last):
@@ -407,6 +495,99 @@ class RainScreensaver(ScreensaverWindow):
         for control, animation in animations:
             control.setAnimations(animation)
         return count
+
+    def tunnel_seconds(self, variant):
+        """Seconds one column takes from the far end to past the viewer."""
+        return (TUNNEL_SECONDS * self.speed_factor()
+                * TUNNEL_REFERENCE_SPEED / variant.fall_speed
+                / variant.animation_speed)
+
+    def add_drops(self, variant, strips):
+        """Fill the window with the tunnel and return how many columns it has.
+
+        Each column is placed where it would stand as it passes the screen
+        plane, and everything else follows from the zoom about the middle of
+        the screen: far away it is small and close to the vanishing point,
+        near it is large and out towards the edge. The columns are started a
+        fraction of a flight apart, so their depths are spread evenly through
+        the tunnel rather than arriving in shells.
+
+        Their stacking order stays as it is while their depth changes, so a
+        near column is sometimes drawn behind a far one. On a black ground
+        with drops this narrow the two look the same either way.
+        """
+        width = self.getWidth() or FALLBACK_WIDTH
+        height = self.getHeight() or FALLBACK_HEIGHT
+        duration = int(round(self.tunnel_seconds(variant) * 1000))
+        centre = "{},{}".format(width // 2, height // 2)
+
+        controls, animations = [], []
+        for index in range(TUNNEL_COLUMNS):
+            # The same hash the rain scatters its columns with, read at three
+            # places, so a column keeps its place and its pace across runs.
+            jitter_x = random_float(index, 0.0) - 0.5
+            jitter_y = random_float(index, 1.0) - 0.5
+            size = random_float(index, 2.0)
+            pace = random_float(index, 3.0)
+
+            # Its size at the screen plane, and the strip it draws
+            tall = int(round(height * TUNNEL_HEIGHT
+                             * (1 - TUNNEL_HEIGHT_SPREAD
+                                + 2 * TUNNEL_HEIGHT_SPREAD * size)))
+            wide = max(1, int(round(tall / float(tunnel.STRIP_ROWS))))
+
+            # Where it stands as it passes the screen plane: its cell of the
+            # grid, jittered inside it. The spread reaches beyond the screen,
+            # because such a column is off the picture by then but was on it
+            # while it was further away, and that is where the columns at the
+            # edges come from.
+            span_x = TUNNEL_SPREAD * width / float(TUNNEL_ACROSS)
+            span_y = TUNNEL_SPREAD * height / float(TUNNEL_DOWN)
+            across = (index % TUNNEL_ACROSS) + 0.5 + jitter_x
+            down = (index // TUNNEL_ACROSS) + 0.5 + jitter_y
+            fall = int(round(height * TUNNEL_FALL
+                             * (1 - TUNNEL_FALL_SPREAD
+                                + 2 * TUNNEL_FALL_SPREAD * pace)))
+            left = int(round(width / 2.0 - wide / 2.0
+                             + (across - TUNNEL_ACROSS / 2.0) * span_x))
+            # Hung half a fall above its place, so it crosses the screen in
+            # the middle of its flight, where it is nearest and brightest.
+            top = int(round(height / 2.0 - tall / 2.0
+                            + (down - TUNNEL_DOWN / 2.0) * span_y
+                            - fall / 2.0))
+
+            # Evenly spread through the tunnel, and handed out in steps
+            # across the grid so depth and place stay unrelated -- the same
+            # job startDepth does in the original.
+            delay = int(round((index * TUNNEL_DEPTH_STEP % TUNNEL_COLUMNS)
+                              * duration / float(TUNNEL_COLUMNS)))
+
+            drop = xbmcgui.ControlImage(
+                left, top, wide, tall,
+                strips[index % len(strips)], aspectRatio=0)
+            controls.append(drop)
+            animations.append((drop, [
+                ("conditional", _APPROACH.format(
+                    far=TUNNEL_FAR, near=TUNNEL_NEAR, centre=centre,
+                    duration=duration, delay=delay)),
+                ("conditional", _FALL.format(
+                    distance=fall, duration=duration, delay=delay)),
+                ("conditional", _DEPTH.format(
+                    half=duration // 2, delay=delay)),
+            ]))
+
+        # Added last, so it covers the columns rather than sitting behind them
+        self.cover = self.new_cover(width, height, OPAQUE)
+        controls.append(self.cover)
+
+        self.addControls(controls)
+        self.columns = controls
+        # There are no stencils to cycle here, and the tick that would do it
+        # must find nothing to work on.
+        self.stencil_sets, self.churn = [], []
+        for control, animation in animations:
+            control.setAnimations(animation)
+        return TUNNEL_COLUMNS
 
     # -- The cover ---------------------------------------------------------
 

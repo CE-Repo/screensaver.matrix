@@ -259,3 +259,7 @@ msgstr "Noir"
 msgctxt "#32109"
 msgid "Whiteout"
 msgstr "Blanco total"
+
+msgctxt "#32111"
+msgid "Tunnel (3D)"
+msgstr "Túnel (3D)"

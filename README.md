@@ -3,16 +3,20 @@
 Turns your idle Kodi screen into the Matrix. The code rain is drawn by the
 addon itself -- no video files, no downloads, no network -- as a port of
 [Rezmason/matrix](https://github.com/Rezmason/matrix), with thirteen of its
-variants and eight of the addon's own taking turns.
+variants and nine of the addon's own taking turns -- one of them a 3D tunnel
+the glyphs come flying out of.
 
 ---
 
 ## Features
 
 - **The code rain, generated**: nothing is played back, everything is drawn
-- **21 variants** -- thirteen from Rezmason's project and eight of this addon's
+- **22 variants** -- thirteen from Rezmason's project and nine of this addon's
   own -- each with its own glyphs, colours, density and speed, and each
   switchable on its own
+- **A 3D tunnel**: the rain keeps falling, but you fly into it -- 128 columns
+  of glyphs at 128 depths come at you out of the distance, built the way
+  Rezmason's volumetric mode is. Same glyphs, same colours, a scene of its own
 - **The glyphs cycle**, the way they do in the films
 - **They take turns**: one is picked at random, held for as long as you like,
   then the next
@@ -25,7 +29,7 @@ variants and eight of the addon's own taking turns.
 ## Requirements
 
 - Any platform Kodi runs on. No internet connection: the addon ships 680 KB of
-  glyph atlases and generates its textures itself. All twenty-one variants
+  glyph atlases and generates its textures itself. All twenty-two variants
   together come to 75 MB in the profile folder, or 26 MB with the glyphs left
   as they are -- a variant is only ever built once, and only if it is switched
   on.
@@ -119,6 +123,7 @@ variants do not cover. None of them needs an effect the port lacks.
 | Glacier | huberfishD | Pale ice, the slowest and quietest of them all |
 | Neon | megacity | The megacity grid, striped in a magenta to cyan gradient |
 | Noir | matrixcode | No colour at all: grey at a hard contrast, with a white cursor |
+| Tunnel (3D) | matrixcode | The other scene: raindrops coming at the viewer out of the distance, falling as they come |
 | Whiteout | gothic | Dark ink on a light page |
 
 Trinity, Morpheus and Bugs are drawn in perspective in the original, which a
@@ -178,6 +183,7 @@ original, while the skin engine only has to move one control per column.
 | `render/version.py` | The variants: the ported ones with the values they override in `js/config.js` of that project, and this addon's own below them |
 | `render/glyphs.py` | Cuts the glyphs out of the atlases in `resources/glyphs/`. They are distance fields rather than pictures, so the module turns them into coverage maps with clean edges. A font would not do: Kodi resolves fonts against the active skin |
 | `render/rain.py` | Builds and caches the stencil and light textures |
+| `render/tunnel.py` | Builds and caches the strips of the 3D tunnel: one raindrop each, on a transparent ground |
 | `render/png.py` | A minimal PNG codec, because Kodi ships no imaging library |
 | `gui/rain.py` | Puts the controls on screen, gives each light its animation, and swaps variants |
 
@@ -196,6 +202,39 @@ immediate, and it happens behind a black cover that fades over the picture and
 back off it. The skin engine cannot run that fade: its animations react to
 conditions rather than to a moment of our choosing, so the cover is dimmed from
 Python in two dozen steps, eased at both ends.
+
+### The 3D tunnel
+
+The tunnel is built the way Rezmason's volumetric mode is: not as a picture
+that grows, but as many columns that each have a depth of their own. There,
+every column of the rain is a quad with its own starting depth, cycling towards
+the camera -- `quadDepth = fract(startDepth + time * forwardSpeed)` in
+`rainPass.vert.glsl`. What fills the screen is how many columns are in the air,
+not how large any one of them is.
+
+Here a column is a narrow strip holding a single raindrop, transparent
+everywhere else, and 128 of them are on screen at once. The whole perspective
+is one zoom taken about the middle of the screen rather than about the control:
+that grows the column and carries it away from the vanishing point by the same
+factor, so a column far off is small and near the middle, and the same column
+close up is large and out at the edge. A flight takes four and a half seconds
+at the normal speed setting, and the "Speed of the code rain" setting scales it
+the way it scales the fall. It rains while it comes, on a slide that shares the
+zoom's period -- more than a screen and a half of fall per flight, and faster
+the nearer it gets, because that slide is scaled up along with the column. And
+it fades up out of the distance and back down as it passes, which is what hides
+the moment both start over, fall included.
+
+The columns sit on a jittered grid rather than at random, because a hundred odd
+columns thrown at random leave holes big enough to see, and the eye reads a hole
+as a fault rather than as chance. Their depths are handed out in coprime steps
+across that grid, so depth and place stay unrelated; otherwise the grid would
+arrive as a wave sweeping over the screen.
+
+Depth is the zoom and the fade, not a projection: the strips are flat, they do
+not turn, and their stacking order stays as it is while their depth changes. On
+a black ground with drops this narrow, none of that shows. What it costs is one
+control and three animations per column, and nothing per frame.
 
 ### Where the port stops
 
@@ -240,7 +279,7 @@ resources/
     gui/
       skin.py                window definitions and control ids
       base.py                what the screensaver windows have in common
-      rain.py                the rain window, and the variants taking turns
+      rain.py                the rain and tunnel windows, and the variants taking turns
       prepare.py             the "prepare textures now" action from the settings
       preview.py             the loading screen shown before the rain starts
       transparent.py         placeholder shown while the rain is already up
@@ -249,6 +288,7 @@ resources/
       version.py             the variants and the glyph atlas each one uses
       glyphs.py              cuts the glyphs out of the distance field atlases
       rain.py                builds and caches the stencil and light textures
+      tunnel.py              builds and caches the strips of the 3D tunnel
       png.py                 minimal PNG codec for the atlases and the textures
 ```
 
@@ -256,7 +296,8 @@ resources/
 
 1. `resources/lib/render/version.py` -- one `Version(...)` entry with the values
    it overrides, exactly as `js/config.js` in Rezmason's project spells them.
-   Its `setting_id` follows from its name.
+   Its `setting_id` follows from its name, and `scene` picks which of the two
+   it is drawn as.
 2. `resources/glyphs/` -- the atlas, if it uses one that is not there yet, plus
    a row in that folder's README and an entry in `FONTS`.
 3. `resources/settings.xml` -- one toggle, `enable-<name>`.

@@ -267,6 +267,11 @@
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
+                <setting id="enable-tunnel" type="boolean" label="32111" help="32095">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
                 <setting id="enable-twilight" type="boolean" label="32074" help="32095">
                     <level>0</level>
                     <default>true</default>

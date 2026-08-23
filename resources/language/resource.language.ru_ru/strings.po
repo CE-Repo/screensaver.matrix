@@ -259,3 +259,7 @@ msgstr "Нуар"
 msgctxt "#32109"
 msgid "Whiteout"
 msgstr "Белая мгла"
+
+msgctxt "#32111"
+msgid "Tunnel (3D)"
+msgstr "Тоннель (3D)"

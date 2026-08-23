@@ -19,6 +19,12 @@ from render.raindrop import hsl
 #: A glyph atlas: the file in resources/glyphs and the grid it is laid out on
 Font = namedtuple("Font", ("file_name", "columns", "rows"))
 
+#: What a variant draws. The rain is columns of falling light behind still
+#: glyphs; the tunnel is columns of glyphs flying at the viewer. They share
+#: everything below -- the glyphs, the palette, the cursor -- and differ only
+#: in the textures they are built from and the controls they are put on.
+SCENE_RAIN, SCENE_TUNNEL = "rain", "tunnel"
+
 FONTS = {
     "matrixcode": Font("matrixcode_msdf.png", 8, 8),
     "megacity": Font("megacity_msdf.png", 8, 8),
@@ -81,6 +87,8 @@ DEFAULTS = {
     "debug": False,
     #: Whether the variant is switched on for a fresh install
     "enabled": True,
+    #: Which of the two scenes the variant is drawn as
+    "scene": SCENE_RAIN,
     #: Raises the brightness to stand in for the effects this port leaves out.
     #: Only for variants that lean on one of them to light the screen up at
     #: all; everything else is drawn at the brightness the shader computes.
@@ -410,6 +418,19 @@ _VERSIONS = (
             (0.3, hsl(0.6, 0.2, 0.45)),
             (0.7, hsl(0.62, 0.5, 0.1)),
         ),
+    ),
+    Version(
+        # The other scene: the glyphs come at the viewer instead of falling
+        # past. Its brightness is spread wider than the rain's, because a
+        # strip is a still image and every glyph on it has to carry itself.
+        "tunnel", 32111,
+        scene=SCENE_TUNNEL,
+        cursor_colour=hsl(0.242, 1, 0.85),
+        cursor_intensity=1.6,
+        base_contrast=1.0,
+        base_brightness=-0.15,
+        #: The pace of the flight, on the same scale the rain falls at
+        fall_speed=0.3,
     ),
 )
 
