@@ -11,10 +11,7 @@ from core import logger
 from core.addon import translate
 from gui.rain import churn_sets, enabled_versions, texture_folder
 from render import rain
-
-
-class _Cancelled(Exception):
-    """Raised out of the progress callback when the user presses cancel."""
+from render.cache import Cancelled
 
 
 def prepare_textures():
@@ -28,14 +25,14 @@ def prepare_textures():
         for number, variant in enumerate(variants):
             def report(done, total, number=number):
                 if dialog.iscanceled():
-                    raise _Cancelled
+                    raise Cancelled
                 share = (number + float(done) / total) / len(variants)
                 dialog.update(int(share * 100), "{} ({}/{})".format(
                     translate(32098), number + 1, len(variants)))
 
             report(0, 1)
             rain.generate(folder, variant, report, churn_sets())
-    except _Cancelled:
+    except Cancelled:
         logger.info("Preparing the textures was cancelled")
     except OSError as exc:
         logger.error("Could not prepare the textures: {}".format(exc))

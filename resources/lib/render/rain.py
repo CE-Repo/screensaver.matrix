@@ -28,7 +28,7 @@ from collections import namedtuple
 from random import Random
 
 from render import glyphs, raindrop
-from render.png import write_rgba
+from render.cache import drop_stale, write
 
 #: The screen the column counts in the version table are given for
 REFERENCE_ASPECT = 16.0 / 9.0
@@ -168,25 +168,6 @@ def drop_folders(folder, keep):
     return dropped
 
 
-def _drop_stale(folder, current):
-    """Delete textures an earlier version of the addon left behind."""
-    keep = set(os.path.basename(path) for path in current)
-    for name in os.listdir(folder):
-        if name.startswith(_PREFIXES) and name not in keep:
-            try:
-                os.remove(os.path.join(folder, name))
-            except OSError:
-                # A leftover we cannot delete costs disk space and nothing
-                # else, so it must not stop the rain from starting.
-                pass
-
-
-def _write(path, width, height, scanlines):
-    """Write a texture, but only move it into place once it is complete."""
-    partial = path + ".part"
-    write_rgba(partial, width, height, scanlines)
-    os.replace(partial, path)
-
 
 class _Punch:
     """Turns each glyph into the hole it leaves in a stencil, once."""
@@ -268,7 +249,7 @@ def generate(folder, version, on_progress=None, sets=CHURN_SETS):
     os.makedirs(inside, exist_ok=True)
     stencils, lights = texture_paths(folder, version, sets)
     every = [path for group in stencils for path in group] + lights
-    _drop_stale(inside, every)
+    drop_stale(inside, every, _PREFIXES)
 
     missing = [path for path in every if not os.path.exists(path)]
     if not missing:
@@ -298,7 +279,7 @@ def generate(folder, version, on_progress=None, sets=CHURN_SETS):
             sequences = _sequences(Random(_SEED + index),
                                    len(punch.coverage_maps), shape, len(stencils))
             for group in wanted:
-                _write(stencils[group][index], shape.cell_width,
+                write(stencils[group][index], shape.cell_width,
                        shape.rows * shape.cell_height,
                        _stencil(punch, sequences[group]))
                 done += 1
@@ -306,7 +287,7 @@ def generate(folder, version, on_progress=None, sets=CHURN_SETS):
                     on_progress(done, total)
 
         if lights[index] in outstanding:
-            _write(lights[index], LIGHT_WIDTH,
+            write(lights[index], LIGHT_WIDTH,
                    shape.light_rows * shape.row_pixels,
                    _light(index, version, shape))
             done += 1

@@ -263,3 +263,19 @@ msgstr ""
 msgctxt "#32111"
 msgid "Tunnel (3D)"
 msgstr ""
+
+msgctxt "#32120"
+msgid "What happens to the rain once the display timeout is reached: paused keeps the window up with nothing moving, stopped closes it."
+msgstr ""
+
+msgctxt "#32121"
+msgid "Minutes the rain runs before the display timeout is reached."
+msgstr ""
+
+msgctxt "#32122"
+msgid "Switch the display off through Kodi's power management once the timeout is reached."
+msgstr ""
+
+msgctxt "#32123"
+msgid "Put the TV into standby over HDMI-CEC once the timeout is reached."
+msgstr ""

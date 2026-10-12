@@ -139,24 +139,29 @@ the brightness the shader computes.
 
 A Kodi screensaver addon may only draw a window, and Kodi tears that window
 down again the moment the screensaver deactivates. The addon therefore
-registers three extension points and passes the work along:
+registers two extension points and passes the work along:
 
 | Extension point | Module | Job |
 | --- | --- | --- |
 | `xbmc.ui.screensaver` | `entrypoints/screensaver_entry.py` | Decides what Kodi gets to see, then hands over |
 | `xbmc.python.script` | `entrypoints/script_entry.py` | Opens the window the rain runs in |
-| `xbmc.service` | `entrypoints/service_entry.py` | Clears the `is_locked` flag once per Kodi start |
+
+Both entry points only set up the import path and call into `gui/launch.py`,
+where the decisions are made.
 
 When the screensaver fires:
 
 1. Something else is playing? -> dismiss the screensaver and do nothing.
-2. Our own window is already up (`is_locked`)? -> show the transparent
+2. Our own window is already up (the lock)? -> show the transparent
    placeholder instead of starting over.
 3. Otherwise: optionally show the preview window, then `RunAddon` the script
    entry point, which opens the rain window.
 
-`is_locked` is an internal, hidden setting. It survives a crash, which is why
-the service resets it at every Kodi start.
+The lock is a property on Kodi's Home window rather than a setting: every
+Python interpreter Kodi runs can see it, and it is gone after a restart, so a
+crash can never leave it stuck. Which variant ran last is kept in a small file
+in the profile folder instead of the settings, so the settings file is not
+rewritten on every variant change.
 
 ## The code rain
 
@@ -308,11 +313,11 @@ resources/
     entrypoints/
       screensaver_entry.py   xbmc.ui.screensaver -- hands over to the script
       script_entry.py        xbmc.python.script  -- opens the rain window
-      service_entry.py       xbmc.service        -- clears the lock at startup
     core/
       addon.py               settings, dialogs and translations
       logger.py              prefixed logging
     gui/
+      launch.py              what the two entry points decide
       skin.py                window definitions and control ids
       base.py                what the screensaver windows have in common
       rain.py                the rain and tunnel windows, and the variants taking turns
@@ -326,6 +331,7 @@ resources/
       rain.py                builds and caches the stencil and light textures
       tunnel.py              builds and caches the strips of the 3D tunnel
       png.py                 minimal PNG codec for the atlases and the textures
+      cache.py               what the rain and the tunnel share about the cache
 ```
 
 ## Adding a variant
@@ -353,7 +359,7 @@ filtering `kodi.log` for that string shows the whole story:
 
 | Symptom | Likely cause |
 | --- | --- |
-| Screensaver never starts | Another player is active, or `is_locked` is stuck -- restart Kodi, the service clears it |
+| Screensaver never starts | Another player is active, or the lock is stuck after the script was killed -- restart Kodi, which clears it |
 | A long pause before the first frame | The textures of that variant are being generated; it happens once per variant and the loading screen shows the progress |
 | *"The code rain could not be generated"* | The profile folder is not writable |
 | Always the same variant | Minutes per variant is 0, only one variant is switched on, or all of them are off and it fell back to Classic |

@@ -1,0 +1,4 @@
+# Kept out of the ZIP GitHub builds for a download, which is what gets
+# installed into Kodi: none of this is part of the addon itself.
+.gitattributes export-ignore
+.gitignore export-ignore

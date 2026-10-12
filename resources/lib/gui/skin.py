@@ -6,14 +6,16 @@ import xbmc
 
 from core.addon import ADDON_PATH
 
+#: The loading screen and the rain share one window definition: the loading
+#: overlay is all the first has, and the rain adds its columns to it.
 SCREENSAVER_XML = "screensaver-matrix.xml"
 TRANSPARENT_XML = "screensaver-matrix-trans.xml"
-RAIN_XML = "screensaver-matrix-rain.xml"
 
 #: The plain black texture of the skin, addressed by path because a control
-#: built in Python is not resolved against the skin's own media folder.
+#: built in Python is not resolved against the skin's own media folder. A few
+#: pixels are enough: Kodi stretches it to whatever size the control has.
 BLACK_TEXTURE = os.path.join(
-    ADDON_PATH, "resources", "skins", "default", "media", "black.jpg")
+    ADDON_PATH, "resources", "skins", "default", "media", "black.png")
 
 #: Skin folder below resources/skins. Only the 1080i variant is shipped: Kodi
 #: picks the closest of the resolution folders it finds there and scales the
@@ -31,6 +33,17 @@ MESSAGE_LABEL = 32503
 LOADING_PROPERTY = "screensaver-matrix-loading"
 LOADING_ON = "true"
 LOADING_OFF = "false"
+
+
+class ExitMonitor(xbmc.Monitor):
+    """Calls back once Kodi deactivates the screensaver."""
+
+    def __init__(self, deactivated_callback):
+        super().__init__()
+        self.deactivated_callback = deactivated_callback
+
+    def onScreensaverDeactivated(self):
+        self.deactivated_callback()
 
 
 def show_modal(window_class, xml_file):

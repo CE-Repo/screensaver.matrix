@@ -29,16 +29,8 @@ class ScreensaverPreview(xbmcgui.WindowXMLDialog):
     the way out.
     """
 
-    class ExitMonitor(xbmc.Monitor):
-
-        def __init__(self, deactivated_callback):
-            self.deactivated_callback = deactivated_callback
-
-        def onScreensaverDeactivated(self):
-            self.deactivated_callback()
-
     def onInit(self):
-        self.exit_monitor = self.ExitMonitor(self.exit)
+        self.exit_monitor = skin.ExitMonitor(self.exit)
         self.getControl(skin.STATUS_LABEL).setLabel(translate(32013))
         self.setProperty(skin.LOADING_PROPERTY, skin.LOADING_ON)
         self.exit_monitor.waitForAbort(HANDOVER_DELAY)

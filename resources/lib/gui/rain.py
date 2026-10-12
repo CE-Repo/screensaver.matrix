@@ -31,11 +31,12 @@ import time
 import xbmcgui
 
 from core import logger
-from core.addon import (get_bool, get_int, get_string, profile_folder, set_bool,
-                        set_string, translate)
+from core.addon import (get_bool, get_int, profile_folder, read_state,
+                        set_locked, translate, write_state)
 from gui import skin
 from gui.base import ScreensaverWindow, monitor
 from render import rain, tunnel, version
+from render.cache import Cancelled
 from render.raindrop import column_offsets, random_float
 
 #: Folder below the addon's profile the generated textures are cached in
@@ -57,10 +58,15 @@ TICK_SECONDS = 0.25
 DEFAULT_INTERVAL = 5
 FOREVER = 0
 
-#: Remembers across runs which variant was shown last. A screensaver starts
-#: over every time the user touches something, and without this the same
-#: variant could come up again straight away.
+#: File in the profile folder that remembers across runs which variant was
+#: shown last. A screensaver starts over every time the user touches
+#: something, and without this the same variant could come up again straight
+#: away.
 LAST_VARIANT = "last-variant"
+
+#: How long closing the window waits for the scene thread to notice. It checks
+#: at least every tick, and between two textures while it builds them.
+JOIN_SECONDS = 5
 
 #: Used when Kodi does not report a window size
 FALLBACK_WIDTH, FALLBACK_HEIGHT = 1920, 1080
@@ -306,6 +312,22 @@ class RainScreensaver(ScreensaverWindow):
         #: texture came from, so the glyphs can be cycled
         self.churn = []
         self.stencil_sets = []
+        #: The thread that builds and swaps the variants
+        self.worker = None
+
+    def doModal(self):
+        try:
+            super().doModal()
+        finally:
+            # The scene thread may still be building textures. It stops at the
+            # next one once it sees the window is gone; waiting for that here
+            # keeps the script from ending with it still running, which Kodi
+            # would otherwise answer by killing the interpreter.
+            self.active = False
+            if self.worker is not None:
+                self.worker.join(JOIN_SECONDS)
+                if self.worker.is_alive():
+                    logger.warning("The scene thread did not stop in time")
 
     def onInit(self):
         # Kodi calls onInit again whenever the window is re-created; the
@@ -319,7 +341,8 @@ class RainScreensaver(ScreensaverWindow):
 
         # Generating the textures takes a moment on the very first run and
         # must not block the window while the loading screen is up.
-        threading.Thread(target=self.run_scene, daemon=True).start()
+        self.worker = threading.Thread(target=self.run_scene, daemon=True)
+        self.worker.start()
 
         self.supervise_display_timeout()
 
@@ -334,7 +357,7 @@ class RainScreensaver(ScreensaverWindow):
                           set(known.name for known in version.VERSIONS))
 
         variants = enabled_versions()
-        upcoming = self.in_random_order(get_string(LAST_VARIANT))
+        upcoming = self.in_random_order(read_state(LAST_VARIANT))
 
         if not self.show_variant(next(upcoming), self.report_progress):
             return
@@ -388,12 +411,15 @@ class RainScreensaver(ScreensaverWindow):
         return max(FOREVER, minutes) * 60
 
     def hold(self, seconds):
-        """Wait, cycling glyphs as we go, until the time is up."""
-        waited = 0.0
-        while self.active and waited < seconds:
+        """Wait, cycling glyphs as we go, until the time is up.
+
+        Measured against the clock rather than by counting ticks, so the time
+        the cycling itself takes is not added on top of every interval.
+        """
+        until = time.monotonic() + seconds
+        while self.active and time.monotonic() < until:
             if monitor.waitForAbort(TICK_SECONDS):
                 return False
-            waited += TICK_SECONDS
             self.cycle_glyphs()
         return self.active
 
@@ -411,18 +437,29 @@ class RainScreensaver(ScreensaverWindow):
                 logger.debug("Could not cycle a column: {}".format(exc))
                 return
 
-    @staticmethod
-    def build(variant, on_progress=None):
-        """Generate the textures of whichever scene the variant draws."""
+    def build(self, variant, on_progress=None):
+        """Generate the textures of whichever scene the variant draws.
+
+        Raises :class:`Cancelled` between two textures once the window is
+        gone: on slow hardware a variant takes a while, and there is no point
+        finishing one nobody is going to see.
+        """
+        def report(done, total):
+            if not self.active:
+                raise Cancelled
+            if on_progress:
+                on_progress(done, total)
+
         if variant.scene == version.SCENE_TUNNEL:
-            return tunnel.generate(texture_folder(), variant, on_progress)
-        return rain.generate(texture_folder(), variant, on_progress,
-                             churn_sets())
+            return tunnel.generate(texture_folder(), variant, report)
+        return rain.generate(texture_folder(), variant, report, churn_sets())
 
     def prepare(self, variant):
         """Build a variant's textures, returning False if that is impossible."""
         try:
             self.build(variant)
+        except Cancelled:
+            return False
         except OSError as exc:
             logger.error("Could not generate the textures: {}".format(exc))
             return False
@@ -434,6 +471,8 @@ class RainScreensaver(ScreensaverWindow):
         """Replace whatever is on screen with *variant*."""
         try:
             textures = self.build(variant, on_progress)
+        except Cancelled:
+            return False
         except OSError as exc:
             logger.error("Could not generate the textures: {}".format(exc))
             self.show_message(32082)
@@ -452,11 +491,11 @@ class RainScreensaver(ScreensaverWindow):
         # the moment in between looks no different.
         self.clear_columns()
         if variant.scene == version.SCENE_TUNNEL:
-            count, what = self.add_drops(variant, textures), "columns"
+            count = self.add_drops(variant, textures)
         else:
-            count, what = self.add_columns(variant, *textures), "columns"
-        set_string(LAST_VARIANT, variant.name)
-        logger.info("Code rain: {} in {} {}".format(variant.name, count, what))
+            count = self.add_columns(variant, *textures)
+        write_state(LAST_VARIANT, variant.name)
+        logger.info("Code rain: {} in {} columns".format(variant.name, count))
         return self.fade(OPAQUE, CLEAR)
 
     def fade(self, first, last):
@@ -680,20 +719,16 @@ class RainScreensaver(ScreensaverWindow):
             delay = int(round((index * TUNNEL_DEPTH_STEP % TUNNEL_COLUMNS)
                               * duration / float(TUNNEL_COLUMNS)))
 
-            for half in range(2):
-                drop = xbmcgui.ControlImage(
-                    left, top + half * tall, wide, tall,
-                    strips[index % len(strips)], aspectRatio=0)
-                controls.append(drop)
-                animations.append((drop, [
-                    ("conditional", _APPROACH.format(
-                        far=TUNNEL_FAR, near=TUNNEL_NEAR, centre=centre,
-                        duration=duration, delay=delay)),
-                    ("conditional", _FALL.format(
-                        distance=fall, duration=duration, delay=delay)),
-                    ("conditional", _DEPTH.format(
-                        half=duration // 2, delay=delay)),
-                ]))
+            self.add_pair(controls, animations, left, top, wide, tall,
+                          strips[index % len(strips)], [
+                              _APPROACH.format(
+                                  far=TUNNEL_FAR, near=TUNNEL_NEAR,
+                                  centre=centre, duration=duration,
+                                  delay=delay),
+                              _FALL.format(distance=fall, duration=duration,
+                                           delay=delay),
+                              _DEPTH.format(half=duration // 2, delay=delay),
+                          ])
 
         for number in range(TUNNEL_STARTERS):
             index = TUNNEL_COLUMNS + number
@@ -714,21 +749,16 @@ class RainScreensaver(ScreensaverWindow):
             from_ = int(round(TUNNEL_FAR + span * begun * begun))
 
             fallen = int(round(fall * begun))
-            for half in range(2):
-                drop = xbmcgui.ControlImage(
-                    left, top + fallen + half * tall, wide, tall,
-                    strips[index % len(strips)], aspectRatio=0)
-                controls.append(drop)
-                animations.append((drop, [
-                    ("conditional", _STARTER.format(
-                        from_=from_, near=TUNNEL_NEAR, centre=centre,
-                        duration=left_to_go)),
-                    ("conditional", _STARTER_FALL.format(
-                        distance=int(round(fall * (1 - begun))),
-                        duration=left_to_go)),
-                    ("conditional", _STARTER_DEPTH.format(
-                        duration=left_to_go)),
-                ]))
+            self.add_pair(controls, animations, left, top + fallen, wide, tall,
+                          strips[index % len(strips)], [
+                              _STARTER.format(
+                                  from_=from_, near=TUNNEL_NEAR, centre=centre,
+                                  duration=left_to_go),
+                              _STARTER_FALL.format(
+                                  distance=int(round(fall * (1 - begun))),
+                                  duration=left_to_go),
+                              _STARTER_DEPTH.format(duration=left_to_go),
+                          ])
 
         # Added last, so it covers the columns rather than sitting behind them
         self.cover = self.new_cover(width, height, OPAQUE)
@@ -743,6 +773,20 @@ class RainScreensaver(ScreensaverWindow):
             control.setAnimations(animation)
         return TUNNEL_COLUMNS
 
+    @staticmethod
+    def add_pair(controls, animations, left, top, wide, tall, strip, effects):
+        """Queue the two controls one tunnel column is drawn as.
+
+        One directly above the other, sharing a strip and the same effects,
+        so they stay adjacent at every depth -- see ``TUNNEL_HEIGHT``.
+        """
+        for half in range(2):
+            drop = xbmcgui.ControlImage(left, top + half * tall, wide, tall,
+                                        strip, aspectRatio=0)
+            controls.append(drop)
+            animations.append(
+                (drop, [("conditional", effect) for effect in effects]))
+
     # -- The cover ---------------------------------------------------------
 
     def new_cover(self, width, height, alpha):
@@ -754,11 +798,11 @@ class RainScreensaver(ScreensaverWindow):
 
 def show_screensaver():
     """Open the rain window; blocks until the user dismisses the screensaver."""
-    set_bool("is_locked", True)
+    set_locked(True)
     try:
-        skin.show_modal(RainScreensaver, skin.RAIN_XML)
+        skin.show_modal(RainScreensaver, skin.SCREENSAVER_XML)
     except Exception:
         # A window that never opened would otherwise leave the addon "locked",
         # and every later activation would show the empty placeholder instead.
-        set_bool("is_locked", False)
+        set_locked(False)
         raise
