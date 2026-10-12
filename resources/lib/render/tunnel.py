@@ -23,7 +23,7 @@ import os
 from random import Random
 
 from render import glyphs, rain, raindrop
-from render.png import write_rgba
+from render.cache import drop_stale, write
 
 #: The glyphs one strip holds, and the texture pixels per glyph. 32 cells of
 #: 64 pixels come to 64 x 2048, which is the texture limit of older hardware
@@ -77,18 +77,6 @@ def strip_paths(folder, variant):
     return [os.path.join(inside, _strip_name(index)) for index in range(STRIPS)]
 
 
-def _drop_stale(folder, current):
-    """Delete strips an earlier version of the addon left behind."""
-    keep = set(os.path.basename(path) for path in current)
-    for name in os.listdir(folder):
-        if name.startswith(_PREFIXES) and name not in keep:
-            try:
-                os.remove(os.path.join(folder, name))
-            except OSError:
-                # A leftover we cannot delete costs disk space and nothing
-                # else, so it must not stop the tunnel from starting.
-                pass
-
 
 def _cell(coverage, colour):
     """One glyph as the rows of a cell: its colour, carried by its coverage."""
@@ -133,7 +121,7 @@ def generate(folder, variant, on_progress=None):
     inside = rain.version_folder(folder, variant)
     os.makedirs(inside, exist_ok=True)
     strips = strip_paths(folder, variant)
-    _drop_stale(inside, strips)
+    drop_stale(inside, strips, _PREFIXES)
 
     missing = [path for path in strips if not os.path.exists(path)]
     if not missing:
@@ -146,10 +134,8 @@ def generate(folder, variant, on_progress=None):
             continue
         # Seeded per strip, so an interrupted run resumes with the strips it
         # would have written the first time.
-        scanlines = _strip(Random(_SEED + index), maps, variant)
-        partial = path + ".part"
-        write_rgba(partial, CELL, STRIP_ROWS * CELL, scanlines)
-        os.replace(partial, path)
+        write(path, CELL, STRIP_ROWS * CELL,
+              _strip(Random(_SEED + index), maps, variant))
         done += 1
         if on_progress:
             on_progress(done, len(missing))

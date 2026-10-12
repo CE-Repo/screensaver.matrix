@@ -11,7 +11,7 @@ import xbmc
 import xbmcgui
 
 from core import logger
-from core.addon import get_bool, get_int, set_bool, translate
+from core.addon import get_bool, get_int, set_locked, translate
 from gui import skin
 from gui.transparent import ScreensaverTrans
 
@@ -61,7 +61,7 @@ class ScreensaverWindow(xbmcgui.WindowXML):
     # -- Kodi callbacks ---------------------------------------------------
 
     def onAction(self, action):
-        set_bool("is_locked", False)
+        set_locked(False)
         self.stop()
 
     # -- Lifetime ---------------------------------------------------------

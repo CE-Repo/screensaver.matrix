@@ -1,21 +1,24 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <!--
-    Loading screen. Controls 32500 to 32502 make up the
-    loading overlay and disappear once the window property
-    "screensaver-matrix-loading" is set to the literal string "false".
-    Control 32503 carries an error message and stays empty otherwise.
+    Window of the live code rain, and of the loading screen the screensaver
+    hook shows before it hands over to it. It only brings the black backdrop
+    and the loading overlay; the columns themselves are image controls that
+    resources/lib/gui/rain.py adds on top once their textures exist.
+
+    Controls 32500 to 32502 make up the loading overlay and disappear once the
+    window property "screensaver-matrix-loading" is set to the literal string
+    "false". Control 32503 carries the error message and stays empty otherwise.
 -->
 <window type="window">
     <controls>
         <control type="image">
-            <description>Black backdrop behind everything else</description>
+            <description>Black backdrop the rain falls on</description>
             <posx>0</posx>
             <posy>0</posy>
             <width>1920</width>
             <height>1080</height>
-            <colordiffuse>FF555555</colordiffuse>
             <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
-            <texture>black.jpg</texture>
+            <texture>black.png</texture>
         </control>
         <control type="image" id="32500">
             <description>Background image</description>
@@ -53,7 +56,7 @@
             <visible>!String.IsEqual(Window.Property(screensaver-matrix-loading),"false")</visible>
         </control>
         <control type="label" id="32503">
-            <description>Message shown when there is nothing to play</description>
+            <description>Message shown when the rain could not be generated</description>
             <left>40</left>
             <top>975</top>
             <width>600</width>

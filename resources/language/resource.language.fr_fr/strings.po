@@ -263,3 +263,19 @@ msgstr "Voile blanc"
 msgctxt "#32111"
 msgid "Tunnel (3D)"
 msgstr "Tunnel (3D)"
+
+msgctxt "#32120"
+msgid "What happens to the rain once the display timeout is reached: paused keeps the window up with nothing moving, stopped closes it."
+msgstr "Ce qui arrive à la pluie une fois le délai d'extinction atteint : la pause garde la fenêtre affichée sans mouvement, l'arrêt la ferme."
+
+msgctxt "#32121"
+msgid "Minutes the rain runs before the display timeout is reached."
+msgstr "Minutes pendant lesquelles la pluie tourne avant que le délai d'extinction soit atteint."
+
+msgctxt "#32122"
+msgid "Switch the display off through Kodi's power management once the timeout is reached."
+msgstr "Éteindre l'écran via la gestion d'énergie de Kodi une fois le délai atteint."
+
+msgctxt "#32123"
+msgid "Put the TV into standby over HDMI-CEC once the timeout is reached."
+msgstr "Mettre le téléviseur en veille via HDMI-CEC une fois le délai atteint."

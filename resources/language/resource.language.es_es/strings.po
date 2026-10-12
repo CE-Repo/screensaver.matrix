@@ -263,3 +263,19 @@ msgstr "Blanco total"
 msgctxt "#32111"
 msgid "Tunnel (3D)"
 msgstr "Túnel (3D)"
+
+msgctxt "#32120"
+msgid "What happens to the rain once the display timeout is reached: paused keeps the window up with nothing moving, stopped closes it."
+msgstr "Qué ocurre con la lluvia al alcanzar el tiempo de apagado: pausar mantiene la ventana sin movimiento, detener la cierra."
+
+msgctxt "#32121"
+msgid "Minutes the rain runs before the display timeout is reached."
+msgstr "Minutos que la lluvia se ejecuta antes de alcanzar el tiempo de apagado."
+
+msgctxt "#32122"
+msgid "Switch the display off through Kodi's power management once the timeout is reached."
+msgstr "Apagar la pantalla mediante la gestión de energía de Kodi al alcanzar el tiempo de apagado."
+
+msgctxt "#32123"
+msgid "Put the TV into standby over HDMI-CEC once the timeout is reached."
+msgstr "Poner el televisor en espera mediante HDMI-CEC al alcanzar el tiempo de apagado."
